@@ -15,7 +15,7 @@ function App() {
   const fetchSearch = async () => {
     try {
       const data = await fetch(
-        `https://api.themoviedb.org/3/search/multi?api_key=3d820eab8fd533d2fd7e1514e86292ea&language=en-US&query=${searchText}&page=${page}&include_adult=false`
+        `https://api.themoviedb.org/3/search/multi?api_key=56185e1e9a25474a6cf2f5748dfb6ebf&language=en-US&query=${searchText}&page=${page}&include_adult=false`
       );
       const { results } = await data.json();
       setContent(results || []); // Added fallback for empty results
@@ -84,11 +84,17 @@ function App() {
                       <div>{media_type === "tv" ? "TV" : "Movie"}</div>
                       <div>{first_air_date || release_date}</div>
                     </div>
+                    
                   </div>
                 </div>
               </div>
             );
           })}
+          {
+                      content.length === 0 && (
+                         <div className="text-danger text-amber-300 mt-2">No results found</div>
+                      ) 
+                    }
       </div>
     </>
   )
