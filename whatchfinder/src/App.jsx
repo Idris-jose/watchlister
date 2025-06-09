@@ -42,61 +42,72 @@ function App() {
   };
 
   return (
-    <>
-      <div className="col-12 pt-5 text-amber-50 pb-3 mt-5 d-flex justify-content-center align-items-center">
-        <input
-          type="text"
-          placeholder="search..."
-          value={searchText} // Added controlled input
-          onChange={Trigger}
-          className="form-control-lg col-6 search bg-dark text-white border border-0"
-        />
-        <button
-          className="btn btn-primary text-white mx-2 col-md-1 col-sm-2 py-2"
-          onClick={Search}
-        >
-          <i className="fas fa-search"></i>
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-amber-200 py-8">
+      <div className="flex flex-col items-center justify-center mb-8">
+        <h1 className="text-4xl font-bold text-amber-700 mb-4 drop-shadow">WatchFinder</h1>
+        <div className="flex w-full max-w-md">
+          <input
+            type="text"
+            placeholder="Search for movies or TV shows..."
+            value={searchText}
+            onChange={Trigger}
+            className="flex-1 px-4 py-2 rounded-l-xl border-t-2 border-b-2 border-l-2 border-amber-400 focus:outline-none text-gray-800 bg-white shadow"
+          />
+          <button
+            className="bg-amber-400 hover:bg-amber-500 text-white px-6 rounded-r-xl font-semibold transition-colors"
+            onClick={Search}
+          >
+            <i className="fas fa-search"></i>
+          </button>
+        </div>
       </div>
-      <div className="row justify-content-center">
-        {content &&
-          content.map((Val) => {
-            const {
-              name,
-              title,
-              poster_path,
-              first_air_date,
-              release_date,
-              media_type,
-              id,
-            } = Val;
-            return (
-              <div className="col-md-3 col-sm-4 py-3" id="card" key={id}>
-                <div className="card bg-dark">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          {content && content.length > 0 ? (
+            content.map((Val) => {
+              const {
+                name,
+                title,
+                poster_path,
+                first_air_date,
+                release_date,
+                media_type,
+                id,
+              } = Val;
+              return (
+                <div
+                  className="bg-white rounded-xl shadow-lg overflow-hidden hover:scale-105 transition-transform duration-200"
+                  key={id}
+                >
                   <img
                     src={poster_path ? `${img_300}/${poster_path}` : unavailable}
-                    className="card-img-top pt-3 pb-0 px-3"
+                    className="w-full h-72 object-cover"
                     alt={title || name || "Movie poster"}
                   />
-                  <div className="card-body">
-                    <h5 className="card-title text-center fs-5">{title || name}</h5>
-                    <div className="d-flex fs-6 align-items-center justify-content-evenly movie">
-                      <div>{media_type === "tv" ? "TV" : "Movie"}</div>
-                      <div>{first_air_date || release_date}</div>
+                  <div className="p-4">
+                    <h5 className="text-lg font-semibold text-amber-700 text-center mb-2 truncate">
+                      {title || name}
+                    </h5>
+                    <div className="flex items-center justify-between text-sm text-gray-600">
+                      <span className="px-2 py-1 bg-amber-100 rounded-full">
+                        {media_type === "tv" ? "TV" : "Movie"}
+                      </span>
+                      <span>
+                        {first_air_date || release_date || "Unknown"}
+                      </span>
                     </div>
-                    
                   </div>
                 </div>
-              </div>
-            );
-          })}
-          {
-                      content.length === 0 && (
-                         <div className="text-danger text-amber-300 mt-2">No results found</div>
-                      ) 
-                    }
+              );
+            })
+          ) : (
+            <div className="col-span-full text-center text-amber-700 font-semibold text-xl mt-8">
+              No results found
+            </div>
+          )}
+        </div>
       </div>
-    </>
+    </div>
   )
 }
 
