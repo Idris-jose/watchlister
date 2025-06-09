@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { SearchCheck,Star } from 'lucide-react'
+import { SearchCheck,Star,Plus,Info } from 'lucide-react'
 import './App.css'
 
 function App() {
@@ -41,7 +41,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen py-8 bg-black">
+    <div className="min-h-screen py-8 bg-black flex flex-col items-center justify-center">
       <div className="flex flex-col items-center justify-center mb-8">
         <h1 className="text-4xl font-bold text-white mb-4 drop-shadow">WatchFinder</h1>
         <div className="flex w-full max-w-md bg-white/20 backdrop-blur-lg border border-white/30 p-8 rounded-2xl shadow-xl">
@@ -50,7 +50,7 @@ function App() {
             placeholder="Search for movies or TV shows..."
             value={searchText}
             onChange={Trigger}
-            className="flex-1 px-4 py-2 rounded-l-xl border-0 focus:outline-none text-gray-800 bg-white/80 backdrop-blur-sm shadow-inner placeholder-gray-500"
+            className="flex-1 px-4 py-2 rounded-l-xl border-0 focus:outline-none text-gray-800 bg-white backdrop-blur-sm shadow-inner placeholder-gray-500"
           />
           <button
             className="bg-gradient-to-r from-gray-950 to-gray-700 backdrop-blur-sm text-white px-6 rounded-r-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
@@ -60,9 +60,8 @@ function App() {
           </button>
         </div>
       </div>
-      <div className="container mx-auto px-4">
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+      <div className="container mx-auto px-4 flex justify-center">
+        <div className="grid justify-center grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {content && content.length > 0 ? (
             content.map((Val) => {
               const {
@@ -78,43 +77,53 @@ function App() {
                 id,
               } = Val;
                 return (
-                <div
-                  className="bg-white rounded-xl shadow-lg overflow-hidden hover:scale-105 transition-transform duration-200"
+                  <div
+                  className="bg-white rounded-xl shadow-lg w-full overflow-hidden hover:scale-105 transition-transform duration-200 group mx-auto"
+                  style={{ maxWidth: "420px" }}
                   key={id}
-                >
-                  <img
-                  src={poster_path ? `${img_300}/${poster_path}` : unavailable}
-                  className="w-full h-72 object-cover"
-                  alt={title || name || "Movie poster"}
-                  />
-                  <div className="p-3">
-                  <h5 className="text-lg font-medium text-black text-center mb-2 truncate">
-                    {title || name}
-                  </h5>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center text-sm text-gray-600">
-                    <span className="px-2 py-1 bg-amber-100 mr-2 rounded-full">
-                      {media_type === "tv" ? "TV" : "Movie"}
+                  >
+                  <div className="relative">
+                    <img
+                    src={poster_path ? `${img_300}/${poster_path}` : unavailable}
+                    className="w-full h-72 object-cover transition-opacity duration-300 group-hover:opacity-80"
+                    alt={title || name || "Movie poster"}
+                    loading="lazy"
+                    />
+                    <span className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
+                    {media_type === "tv" ? "TV" : "Movie"}
                     </span>
+                    {vote_average && (
+                    <span className="absolute top-2 right-2 flex items-center bg-yellow-400/90 text-black text-xs px-2 py-1 rounded-full font-semibold">
+                      {vote_average.toFixed(1)}
+                      <Star className="ml-1 w-4 h-4 text-yellow-700" />
+                    </span>
+                    )}
+                  </div>
+                  <div className="p-4 flex flex-col h-56">
+                    <h5 className="text-lg font-semibold text-black text-center mb-1 truncate">
+                    {title || name}
+                    </h5>
+                    <div className="flex items-center justify-center text-xs text-gray-600 mb-2">
                     <span>
                       {first_air_date || release_date || "Unknown"}
                     </span>
+                    {vote_count ? (
+                      <span className="ml-2 text-gray-400">({vote_count} votes)</span>
+                    ) : null}
                     </div>
-                    <div className="flex items-center">
-                    <span className="text-yellow-500 text-sm font-bold">
-                      {vote_average ? vote_average.toFixed(1) : "N/A"}
-                    </span>
-                    <Star className="ml-1 w-4 h-4 text-yellow-500" />
-                    <span className="ml-1 text-gray-500">
-                      ({vote_count} votes)
-                    </span>
-                    </div>
-                  </div>
-                  <p className="mt-2 text-gray-700 text-sm line-clamp-3">
+                    <p className="text-gray-700 text-sm flex-1 mb-3 line-clamp-5">
                     {overview || "No overview available."}
-                  </p>
+                    </p>
+                    <div className="flex flex-col gap-2 mt-auto">
+                    <button className="bg-blue-900 rounded text-white flex items-center justify-center w-full px-4 py-2 font-medium hover:bg-blue-800 transition">
+                     <Info className='mr-1 w-4 text-white'/> More Info
+                    </button>
+                    <button className="bg-white border border-blue-900 flex items-center justify-center rounded text-blue-900 w-full px-4 py-2 font-medium hover:bg-blue-50 transition">
+                     <Plus className='mr-1 text-blue-800' /> Add to Watchlist
+                    </button>
+                    </div>
                   </div>
-                </div>
+                  </div>
                 );
             })
           ) : (
