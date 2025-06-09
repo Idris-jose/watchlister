@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { SearchCheck, Star, Plus, Info, X } from 'lucide-react'
 import './App.css'
+import imagenotfound from './assets/imagenotfound.png' // Placeholder image since we can't import local assets
 import logo from './assets/logo.png' // Placeholder logo since we can't import local assets
 // Placeholder images since we can't import local assets
-const imagenotfound = "https://via.placeholder.com/300x450/gray/white?text=No+Image+Available"
 
 function App() {
   const [searchText, setSearchText] = useState("");
@@ -93,76 +93,88 @@ function App() {
       vote_average,
       vote_count,
       trailler,
+      number_of_seasons,
+      
       media_type,
 
     } = movie;
 
     return (
       <div
-        className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4"
-        onClick={onClose}
+      className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
       >
-        <div
-          className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-screen overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
+      <div
+        className="bg-white rounded-2xl p-4 max-w-lg w-6xl items-center justify-center max-h-screen overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-start mb-4">
+        <h2 className="text-2xl font-bold text-gray-800">{title || name}</h2>
+        <button
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-700 transition-colors"
+          aria-label="Close modal"
         >
-          <div className="flex justify-between items-start mb-4">
-            <h2 className="text-2xl font-bold text-gray-800">{title || name}</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 transition-colors"
-              aria-label="Close modal"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-          
-          
-         {trailers && trailers.length > 0 ? (
-  <div className="mb-4">
-    <h3 className="text-lg font-semibold mb-2">Trailers</h3>
-    {trailers.map((trailer) => (
-      <div key={trailer.key} className="mb-3">
-        <p className="text-sm font-medium mb-1">{trailer.name}</p>
-        <iframe
-          width="100%"
-          height="200"
-          src={`https://www.youtube.com/embed/${trailer.key}`}
-          title={trailer.name}
-          frameBorder="0"
-          allowFullScreen
-          className="rounded-lg"
-        ></iframe>
-      </div>
-    ))}
-  </div>
-) : (
-  <p className="text-gray-500 text-sm mb-4">No trailers available</p>
-)}
-
-
-
-          
-          <p className="text-gray-600 mb-2">
-            {media_type === "tv" ? "TV Series" : "Movie"} • {first_air_date || release_date || "Unknown"}
-          </p>
-          
-          <p className="text-gray-700 mb-4">{overview || "No overview available."}</p>
-          
-          <div className="flex items-center mb-4">
-            <Star className="w-5 h-5 text-yellow-400 mr-1" />
-            <span className="text-gray-700">
-              {vote_average ? vote_average.toFixed(1) : "N/A"} ({vote_count || 0} votes)
-            </span>
-          </div>
-          
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-          >
-            Close
-          </button>
+          <X className="w-6 h-6" />
+        </button>
         </div>
+        
+        {trailers && trailers.length > 0 ? (
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold mb-2">Trailers</h3>
+          {trailers.map((trailer) => (
+          <div key={trailer.key} className="mb-3">
+            <p className="text-sm font-medium text-gray-500 mb-1">{trailer.name}</p>
+            <iframe
+            width="100%"
+            height="200"
+            src={`https://www.youtube.com/embed/${trailer.key}`}
+            title={trailer.name}
+            frameBorder="0"
+            allowFullScreen
+            className="rounded-lg"
+            ></iframe>
+          </div>
+          ))}
+        </div>
+        ) : (
+        <p className="text-gray-500 text-sm mb-4">No trailers available</p>
+        )}
+
+        <p className="text-gray-600 mb-2">
+        {media_type === "tv" ? "TV Series" : "Movie"} • {first_air_date || release_date || "Unknown"}
+        {/* Show number of seasons for TV shows */}
+        {media_type === 'tv' && number_of_seasons && (
+          <span className="ml-2 text-blue-600 font-medium">
+          • {number_of_seasons} Season{number_of_seasons > 1 ? 's' : ''}
+          </span>
+        )}
+        </p>
+        
+        <p className="text-gray-700 mb-4">{overview || "No overview available."}</p>
+        
+        <div className="flex items-center justify-center text-xs text-gray-600 mb-2">
+        <span>
+          {first_air_date || release_date || "Unknown"}
+        </span>
+        {/* Add season count for TV shows */}
+        {media_type === 'tv' && number_of_seasons && (
+          <span className="ml-2 text-blue-600 font-medium">
+          • {number_of_seasons} Season{number_of_seasons > 1 ? 's' : ''}
+          </span>
+        )}
+        {vote_count ? (
+          <span className="ml-2 text-gray-400">({vote_count} votes)</span>
+        ) : null}
+        </div>
+        
+        <button
+        onClick={onClose}
+        className="w-full px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+        >
+        Close
+        </button>
+      </div>
       </div>
     );
   };
@@ -179,7 +191,7 @@ function App() {
       {/* Header Section */}
       <div className="flex flex-col items-center justify-center mb-8">
         <img src={logo} alt="WatchFinder Logo" className="w-70 mb-4" />
-        <div className="flex w-full max-w-2xl bg-white/20 backdrop-blur-lg border border-white/30 p-8 rounded-2xl shadow-xl">
+        <div className="flex w-xl max-w-2xl bg-white/20 backdrop-blur-lg border border-white/30 p-8 rounded-2xl shadow-xl">
           <input
             type="text"
             placeholder="Search for movies or TV shows..."
@@ -211,6 +223,7 @@ function App() {
                 media_type,
                 vote_average,
                 vote_count,
+                number_of_seasons,
                 overview,
                 id,
               } = movie;
@@ -266,6 +279,7 @@ function App() {
                       </button>
                     </div>
                   </div>
+            
                 </div>
               );
             })
