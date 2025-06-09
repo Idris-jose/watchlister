@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { SearchCheck,Star,Plus,Info } from 'lucide-react'
+import  imagenotfound from './assets/imagenotfound.png'
+import logo from './assets/logo.png'
 import './App.css'
 
 function App() {
@@ -43,8 +45,8 @@ function App() {
   return (
     <div className="min-h-screen py-8 bg-black flex flex-col items-center justify-center">
       <div className="flex flex-col items-center justify-center mb-8">
-        <h1 className="text-4xl font-bold text-white mb-4 drop-shadow">WatchFinder</h1>
-        <div className="flex w-full max-w-md bg-white/20 backdrop-blur-lg border border-white/30 p-8 rounded-2xl shadow-xl">
+        <img src={logo} alt="WatchFinder Logo" className="w-70 mb-4" />
+        <div className="flex w-xl max-w-2xl bg-white/20 backdrop-blur-lg border border-white/30 p-8 rounded-2xl shadow-xl">
           <input
             type="text"
             placeholder="Search for movies or TV shows..."
@@ -61,7 +63,7 @@ function App() {
         </div>
       </div>
       <div className="container mx-auto px-4 flex justify-center">
-        <div className="grid justify-center grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid justify-center grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {content && content.length > 0 ? (
             content.map((Val) => {
               const {
@@ -84,7 +86,7 @@ function App() {
                   >
                   <div className="relative">
                     <img
-                    src={poster_path ? `${img_300}/${poster_path}` : unavailable}
+                    src={poster_path ? `${img_300}/${poster_path}` : imagenotfound}
                     className="w-full h-72 object-cover transition-opacity duration-300 group-hover:opacity-80"
                     alt={title || name || "Movie poster"}
                     loading="lazy"
