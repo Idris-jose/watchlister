@@ -14,9 +14,10 @@ function Home1() {
   const [trailers, setTrailers] = useState([]);
   const [activeTrailer, setActiveTrailer] = useState(0);
   const [loadingTrailers, setLoadingTrailers] = useState(false);
- 
+ const  [success, setSuccess] =useState("")
   const { addToWatchlist } = useWatchlist();
   const { number } = useWatchlist();
+  const {toast} = useWatchlist();
   // Placeholder images
  
   // Image constants
@@ -299,7 +300,7 @@ function Home1() {
                 Watch Now
               </button>
               <button 
-                onClick={() => addToWatchlist()}
+                onClick={() => handleAddToWatchlist(movie)}
                 className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center"
               >
                 <Plus className="w-5 h-5 mr-2" />
@@ -320,7 +321,7 @@ function Home1() {
         onClose={handleCloseModal}
         movie={selectedMovie}
       />
-      
+      <toast />
       /* Header Section */
         <div className="flex flex-col items-center justify-center mb-8 relative">
           <img src={logo} alt="WatchFinder Logo" className="w-70 mb-4" />

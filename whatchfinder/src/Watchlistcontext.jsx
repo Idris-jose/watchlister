@@ -1,5 +1,6 @@
 // WatchlistContext.jsx
 import { createContext, useContext, useState } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
 
 const WatchlistContext = createContext();
 
@@ -14,15 +15,25 @@ export const useWatchlist = () => {
 export const WatchlistProvider = ({ children }) => {
   const [watchlist, setWatchlist] = useState([]);
   const [number,setNumber] = useState (0)
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(false);
 
   const addToWatchlist = (movie) => {
     if (!watchlist.some((m) => m.id === movie.id)) {
       setWatchlist(prev => [...prev, movie]);
     }
     setNumber(prev => prev + 1);
+    Toaster.success(`${movie.title} has been added to your watchlist!`, {
+      duration: 3000,
+      position: 'top-right',
+    });
   };
 
   const removeFromWatchlist = (movieId) => {
+   Toaster.error(`Movie has been removed from your watchlist!`, {
+      duration: 3000,
+      position: 'top-right',
+    });
     setWatchlist(prev => prev.filter(movie => movie.id !== movieId));
   };
 
@@ -31,6 +42,7 @@ export const WatchlistProvider = ({ children }) => {
       watchlist, 
       addToWatchlist, 
       removeFromWatchlist,
+      toast,
       number,
     }}>
       {children}
