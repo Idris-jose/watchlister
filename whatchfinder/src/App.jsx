@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from 'react'
 import { SearchCheck, Star, Plus, Info, X, Play, Calendar, Clock, Users } from 'lucide-react'
-import imagenotfound from './assets/imagenotfound.png' // Placeholder image for not found
 import logo from './assets/logo.png'
-import './App.css' // Assuming you have a CSS file for styles
+import imagenotfound from './assets/imagenotfound.png'
+import './App.css'
 
 function App() {
   const [searchText, setSearchText] = useState("");
@@ -13,9 +14,9 @@ function App() {
   const [trailers, setTrailers] = useState([]);
   const [activeTrailer, setActiveTrailer] = useState(0);
   const [loadingTrailers, setLoadingTrailers] = useState(false);
-  
+  const [added, setAdded] = useState([]);
   // Placeholder images
-  
+ 
   // Image constants
   const img_300 = "https://image.tmdb.org/t/p/w300";
  
@@ -76,6 +77,21 @@ function App() {
     if (searchText.trim()) {
       fetchSearch();
     }
+  };
+
+  const addToWatchlist = (movie) => {
+    // Use the passed movie or fallback to selectedMovie (for modal)
+    const movieToAdd = movie || selectedMovie;
+    if (!movieToAdd) return;
+    
+    // Prevent duplicates by checking id
+    if (!added.some((m) => m.id === movieToAdd.id)) {
+      setAdded((prev) => [...prev, movieToAdd]);
+    }
+    
+    console.log("success")
+    // Only close modal if called from modal (when no movie parameter passed)
+    if (!movie) handleCloseModal();
   };
 
   const handleOpenModal = (movie) => {
@@ -285,7 +301,10 @@ function App() {
                 <Play className="w-5 h-5 mr-2" />
                 Watch Now
               </button>
-              <button className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center">
+              <button 
+                onClick={() => addToWatchlist()}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center"
+              >
                 <Plus className="w-5 h-5 mr-2" />
                 Add to Watchlist
               </button>
@@ -390,8 +409,10 @@ function App() {
                       >
                         <Info className='mr-1 w-4 text-white'/> More Info
                       </button>
-                      <button className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center">
-                        <Plus className='mr-1 text-white' /> Add to Watchlist
+                      <button 
+                        onClick={() => addToWatchlist(movie)}
+                        className="bg-white border border-blue-900 flex items-center justify-center rounded text-blue-900 w-full px-4 py-2 font-medium hover:bg-blue-50 transition">
+                        <Plus className='mr-1 text-blue-800' /> Add to Watchlist
                       </button>
                     </div>
                   </div>
@@ -409,6 +430,40 @@ function App() {
           )}
         </div>
       </div>
+      {/* Watchlist Section */}
+      {added.length > 0 && (
+        <div className="w-full max-w-4xl mt-12 bg-gray-900 rounded-2xl p-6 shadow-lg">
+          <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
+            <Star className="w-6 h-6 text-yellow-400 mr-2" />
+            Your Watchlist
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {added.map((movieAdded) => (
+              <div
+                key={movieAdded.id}
+                className="flex items-center bg-gray-800 rounded-lg p-3 gap-4"
+              >
+                <img
+                  src={movieAdded.poster_path ? `${img_300}/${movieAdded.poster_path}` : imagenotfound}
+                  alt={movieAdded.title || movieAdded.name}
+                  className="w-16 h-24 object-cover rounded shadow"
+                />
+                <div className="flex-1">
+                  <h3 className="text-white font-semibold text-lg truncate">
+                    {movieAdded.title || movieAdded.name}
+                  </h3>
+                  <p className="text-gray-400 text-sm">
+                    {movieAdded.media_type === "tv" ? "TV Show" : "Movie"}
+                  </p>
+                  <p className="text-gray-500 text-xs">
+                    {movieAdded.release_date || movieAdded.first_air_date || "Unknown"}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
