@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
-import { SearchCheck, Star, Plus, Info, X } from 'lucide-react'
-import './App.css'
-import imagenotfound from './assets/imagenotfound.png' // Placeholder image since we can't import local assets
-import logo from './assets/logo.png' // Placeholder logo since we can't import local assets
-// Placeholder images since we can't import local assets
+import { SearchCheck, Star, Plus, Info, X, Play, Calendar, Clock, Users } from 'lucide-react'
+import imagenotfound from './assets/imagenotfound.png' // Placeholder image for not found
+import logo from './assets/logo.png'
+import './App.css' // Assuming you have a CSS file for styles
 
 function App() {
   const [searchText, setSearchText] = useState("");
@@ -12,30 +11,41 @@ function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [trailers, setTrailers] = useState([]);
+  const [activeTrailer, setActiveTrailer] = useState(0);
+  const [loadingTrailers, setLoadingTrailers] = useState(false);
+  
+  // Placeholder images
   
   // Image constants
   const img_300 = "https://image.tmdb.org/t/p/w300";
  
   const fetchTrailers = async (movieId, mediaType) => {
-  try {
-    const endpoint = mediaType === 'tv' ? 'tv' : 'movie';
-    const data = await fetch(
-      `https://api.themoviedb.org/3/${endpoint}/${movieId}/videos?api_key=56185e1e9a25474a6cf2f5748dfb6ebf&language=en-US`
-    );
-    const { results } = await data.json();
-    
-    // Filter for YouTube trailers only
-    const youtubeTrailers = results?.filter(
-      video => video.site === 'YouTube' && 
-      (video.type === 'Trailer' || video.type === 'Teaser')
-    ) || [];
-    
-    setTrailers(youtubeTrailers); // Same pattern as setContent(results)
-  } catch (error) {
-    console.error("Error fetching trailers:", error);
-    setTrailers([]);
+    setLoadingTrailers(true);
+    try {
+      const endpoint = mediaType === 'tv' ? 'tv' : 'movie';
+      const data = await fetch(
+        `https://api.themoviedb.org/3/${endpoint}/${movieId}/videos?api_key=56185e1e9a25474a6cf2f5748dfb6ebf&language=en-US`
+      );
+      const { results } = await data.json();
+      
+      // Filter for YouTube trailers only and sort by type preference
+      const youtubeTrailers = results?.filter(
+        video => video.site === 'YouTube' && 
+        (video.type === 'Trailer' || video.type === 'Teaser' || video.type === 'Clip')
+      ).sort((a, b) => {
+        const typeOrder = { 'Trailer': 0, 'Teaser': 1, 'Clip': 2 };
+        return typeOrder[a.type] - typeOrder[b.type];
+      }) || [];
+      
+      setTrailers(youtubeTrailers);
+      setActiveTrailer(0);
+    } catch (error) {
+      console.error("Error fetching trailers:", error);
+      setTrailers([]);
+    } finally {
+      setLoadingTrailers(false);
+    }
   }
-}
 
   const fetchSearch = async () => {
     try {
@@ -71,15 +81,17 @@ function App() {
   const handleOpenModal = (movie) => {
     setSelectedMovie(movie);
     setModalOpen(true);
-    fetchTrailers(movie.id, movie.media_type)
+    fetchTrailers(movie.id, movie.media_type);
   };
 
   const handleCloseModal = () => {
     setModalOpen(false);
     setSelectedMovie(null);
+    setTrailers([]);
+    setActiveTrailer(0);
   };
 
-  // Modal component for movie details
+  // Enhanced Modal component for movie details
   const MovieModal = ({ open, onClose, movie }) => {
     if (!open || !movie) return null;
 
@@ -87,94 +99,199 @@ function App() {
       title,
       name,
       poster_path,
+      backdrop_path,
       first_air_date,
       release_date,
       overview,
       vote_average,
       vote_count,
-      trailler,
-      number_of_seasons,
-      
       media_type,
-
+      genre_ids
     } = movie;
+
+    const formatDate = (dateString) => {
+      if (!dateString) return "Unknown";
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    };
 
     return (
       <div
-      className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
-      >
-      <div
-        className="bg-white rounded-2xl p-4 max-w-lg w-6xl items-center justify-center max-h-screen overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex justify-between items-start mb-4">
-        <h2 className="text-2xl font-bold text-gray-800">{title || name}</h2>
-        <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-700 transition-colors"
-          aria-label="Close modal"
-        >
-          <X className="w-6 h-6" />
-        </button>
-        </div>
-        
-        {trailers && trailers.length > 0 ? (
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2">Trailers</h3>
-          {trailers.map((trailer) => (
-          <div key={trailer.key} className="mb-3">
-            <p className="text-sm font-medium text-gray-500 mb-1">{trailer.name}</p>
-            <iframe
-            width="100%"
-            height="200"
-            src={`https://www.youtube.com/embed/${trailer.key}`}
-            title={trailer.name}
-            frameBorder="0"
-            allowFullScreen
-            className="rounded-lg"
-            ></iframe>
-          </div>
-          ))}
-        </div>
-        ) : (
-        <p className="text-gray-500 text-sm mb-4">No trailers available</p>
-        )}
-
-        <p className="text-gray-600 mb-2">
-        {media_type === "tv" ? "TV Series" : "Movie"} • {first_air_date || release_date || "Unknown"}
-        {/* Show number of seasons for TV shows */}
-        {media_type === 'tv' && number_of_seasons && (
-          <span className="ml-2 text-blue-600 font-medium">
-          • {number_of_seasons} Season{number_of_seasons > 1 ? 's' : ''}
-          </span>
-        )}
-        </p>
-        
-        <p className="text-gray-700 mb-4">{overview || "No overview available."}</p>
-        
-        <div className="flex items-center justify-center text-xs text-gray-600 mb-2">
-        <span>
-          {first_air_date || release_date || "Unknown"}
-        </span>
-        {/* Add season count for TV shows */}
-        {media_type === 'tv' && number_of_seasons && (
-          <span className="ml-2 text-blue-600 font-medium">
-          • {number_of_seasons} Season{number_of_seasons > 1 ? 's' : ''}
-          </span>
-        )}
-        {vote_count ? (
-          <span className="ml-2 text-gray-400">({vote_count} votes)</span>
-        ) : null}
-        </div>
-        
-        <button
+        className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
         onClick={onClose}
-        className="w-full px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+      >
+        <div
+          className="bg-gray-900 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
         >
-        Close
-        </button>
-      </div>
+          {/* Header with backdrop */}
+          <div className="relative h-64 bg-gradient-to-b from-transparent to-gray-900">
+            {backdrop_path ? (
+              <img
+                src={`https://image.tmdb.org/t/p/w1280${backdrop_path}`}
+                alt="Backdrop"
+                className="w-full h-full object-cover opacity-60"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-blue-900 to-purple-900"></div>
+            )}
+            <div className="absolute top-4 right-4">
+              <button
+                onClick={onClose}
+                className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full transition-all duration-200"
+                aria-label="Close modal"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="absolute bottom-4 left-6 flex items-end space-x-4">
+              <img
+                src={poster_path ? `${img_300}${poster_path}` : imagenotfound}
+                alt="Poster"
+                className="w-24 h-36 rounded-lg shadow-lg border-2 border-white/20"
+              />
+              <div className="text-white pb-2">
+                <h2 className="text-3xl font-bold mb-2">{title || name}</h2>
+                <div className="flex items-center space-x-4 text-sm text-gray-300">
+                  <span className="flex items-center">
+                    <Calendar className="w-4 h-4 mr-1" />
+                    {formatDate(first_air_date || release_date)}
+                  </span>
+                  <span className="px-2 py-1 bg-blue-600 rounded-full text-xs font-medium">
+                    {media_type === "tv" ? "TV Series" : "Movie"}
+                  </span>
+                  {vote_average > 0 && (
+                    <span className="flex items-center bg-yellow-500 text-black px-2 py-1 rounded-full text-xs font-semibold">
+                      <Star className="w-3 h-3 mr-1" />
+                      {vote_average.toFixed(1)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Content area */}
+          <div className="p-6 overflow-y-auto max-h-[calc(90vh-16rem)]">
+            {/* Trailers Section */}
+            {loadingTrailers ? (
+              <div className="mb-6 bg-gray-800 rounded-xl p-6">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-700 rounded w-24 mb-4"></div>
+                  <div className="bg-gray-700 rounded-lg h-48"></div>
+                </div>
+              </div>
+            ) : trailers && trailers.length > 0 ? (
+              <div className="mb-6 bg-gray-800 rounded-xl p-6">
+                <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
+                  <Play className="w-5 h-5 mr-2 text-red-500" />
+                  Trailers & Videos
+                </h3>
+                
+                {/* Main video player */}
+                <div className="mb-4">
+                  <div className="relative bg-black rounded-lg overflow-hidden">
+                    <iframe
+                      width="100%"
+                      height="300"
+                      src={`https://www.youtube.com/embed/${trailers[activeTrailer]?.key}?rel=0`}
+                      title={trailers[activeTrailer]?.name}
+                      frameBorder="0"
+                      allowFullScreen
+                      className="w-full"
+                    ></iframe>
+                  </div>
+                  <div className="mt-2 px-2">
+                    <h4 className="text-white font-medium">{trailers[activeTrailer]?.name}</h4>
+                    <p className="text-gray-400 text-sm">{trailers[activeTrailer]?.type}</p>
+                  </div>
+                </div>
+
+                {/* Video thumbnails */}
+                {trailers.length > 1 && (
+                  <div className="space-y-2">
+                    <h4 className="text-white text-sm font-medium">More Videos</h4>
+                    <div className="flex space-x-3 overflow-x-auto pb-2">
+                      {trailers.map((trailer, index) => (
+                        <button
+                          key={trailer.key}
+                          onClick={() => setActiveTrailer(index)}
+                          className={`flex-shrink-0 group relative ${
+                            index === activeTrailer ? 'ring-2 ring-red-500' : ''
+                          }`}
+                        >
+                          <div className="w-32 h-18 bg-gray-700 rounded-lg overflow-hidden relative">
+                            <img
+                              src={`https://img.youtube.com/vi/${trailer.key}/mqdefault.jpg`}
+                              alt={trailer.name}
+                              className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Play className="w-6 h-6 text-white opacity-80" />
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-300 mt-1 w-32 truncate">
+                            {trailer.name}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="mb-6 bg-gray-800 rounded-xl p-6 text-center">
+                <Play className="w-12 h-12 text-gray-600 mx-auto mb-2" />
+                <p className="text-gray-400">No trailers available</p>
+              </div>
+            )}
+
+            {/* Overview Section */}
+            <div className="mb-6">
+              <h3 className="text-xl font-semibold text-white mb-3">Overview</h3>
+              <p className="text-gray-300 leading-relaxed">
+                {overview || "No overview available for this title."}
+              </p>
+            </div>
+
+            {/* Stats Section */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-gray-800 rounded-lg p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Star className="w-5 h-5 text-yellow-400 mr-1" />
+                  <span className="text-white font-semibold">
+                    {vote_average ? vote_average.toFixed(1) : "N/A"}
+                  </span>
+                </div>
+                <p className="text-gray-400 text-sm">Rating</p>
+              </div>
+              <div className="bg-gray-800 rounded-lg p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Users className="w-5 h-5 text-blue-400 mr-1" />
+                  <span className="text-white font-semibold">
+                    {vote_count ? vote_count.toLocaleString() : "0"}
+                  </span>
+                </div>
+                <p className="text-gray-400 text-sm">Votes</p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-3">
+              <button className="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center">
+                <Play className="w-5 h-5 mr-2" />
+                Watch Now
+              </button>
+              <button className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center">
+                <Plus className="w-5 h-5 mr-2" />
+                Add to Watchlist
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
@@ -191,7 +308,7 @@ function App() {
       {/* Header Section */}
       <div className="flex flex-col items-center justify-center mb-8">
         <img src={logo} alt="WatchFinder Logo" className="w-70 mb-4" />
-        <div className="flex w-xl max-w-2xl bg-white/20 backdrop-blur-lg border border-white/30 p-8 rounded-2xl shadow-xl">
+        <div className="flex lg:w-xl md:w-full sm:w-full max-w-2xl bg-white/20 backdrop-blur-lg border border-white/30 p-8 rounded-2xl shadow-xl">
           <input
             type="text"
             placeholder="Search for movies or TV shows..."
@@ -223,7 +340,6 @@ function App() {
                 media_type,
                 vote_average,
                 vote_count,
-                number_of_seasons,
                 overview,
                 id,
               } = movie;
@@ -274,12 +390,11 @@ function App() {
                       >
                         <Info className='mr-1 w-4 text-white'/> More Info
                       </button>
-                      <button className="bg-white border border-blue-900 flex items-center justify-center rounded text-blue-900 w-full px-4 py-2 font-medium hover:bg-blue-50 transition">
-                        <Plus className='mr-1 text-blue-800' /> Add to Watchlist
+                      <button className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center">
+                        <Plus className='mr-1 text-white' /> Add to Watchlist
                       </button>
                     </div>
                   </div>
-            
                 </div>
               );
             })
