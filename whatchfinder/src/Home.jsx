@@ -1,0 +1,445 @@
+import { useState, useEffect } from 'react'
+import { SearchCheck, Star, Plus, Info, X, Play, Calendar, Clock, Users, Home,Clapperboard } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import logo from './assets/logo.png'
+import imagenotfound from './assets/imagenotfound.png'
+import { useWatchlist } from './Watchlistcontext.jsx';
+
+function Home1() {
+  const [searchText, setSearchText] = useState("");
+  const [content, setContent] = useState([]);
+  const [page] = useState(1);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [trailers, setTrailers] = useState([]);
+  const [activeTrailer, setActiveTrailer] = useState(0);
+  const [loadingTrailers, setLoadingTrailers] = useState(false);
+ 
+  const { addToWatchlist } = useWatchlist();
+  const { number } = useWatchlist();
+  // Placeholder images
+ 
+  // Image constants
+  const img_300 = "https://image.tmdb.org/t/p/w300";
+ 
+  const fetchTrailers = async (movieId, mediaType) => {
+    setLoadingTrailers(true);
+    try {
+      const endpoint = mediaType === 'tv' ? 'tv' : 'movie';
+      const data = await fetch(
+        `https://api.themoviedb.org/3/${endpoint}/${movieId}/videos?api_key=56185e1e9a25474a6cf2f5748dfb6ebf&language=en-US`
+      );
+      const { results } = await data.json();
+      
+      // Filter for YouTube trailers only and sort by type preference
+      const youtubeTrailers = results?.filter(
+        video => video.site === 'YouTube' && 
+        (video.type === 'Trailer' || video.type === 'Teaser' || video.type === 'Clip')
+      ).sort((a, b) => {
+        const typeOrder = { 'Trailer': 0, 'Teaser': 1, 'Clip': 2 };
+        return typeOrder[a.type] - typeOrder[b.type];
+      }) || [];
+      
+      setTrailers(youtubeTrailers);
+      setActiveTrailer(0);
+    } catch (error) {
+      console.error("Error fetching trailers:", error);
+      setTrailers([]);
+    } finally {
+      setLoadingTrailers(false);
+    }
+  }
+
+  const fetchSearch = async () => {
+    try {
+      const data = await fetch(
+        `https://api.themoviedb.org/3/search/multi?api_key=56185e1e9a25474a6cf2f5748dfb6ebf&language=en-US&query=${searchText}&page=${page}&include_adult=false`
+      );
+      const { results } = await data.json();
+      setContent(results || []);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setContent([]);
+    }
+  };
+
+  useEffect(() => {
+    if (searchText.trim()) {
+      fetchSearch();
+    } else {
+      setContent([]);
+    }
+  }, [searchText]);
+ 
+  const Trigger = (e) => {
+    setSearchText(e.target.value);
+  };
+ 
+  const Search = () => {
+    if (searchText.trim()) {
+      fetchSearch();
+    }
+  };
+
+  const handleAddToWatchlist = (movie) => {
+    const movieToAdd = movie || selectedMovie;
+    if (!movieToAdd) return;
+    
+    addToWatchlist(movieToAdd);
+    console.log("success");
+    
+    if (!movie) handleCloseModal();
+  };
+
+  const handleOpenModal = (movie) => {
+    setSelectedMovie(movie);
+    setModalOpen(true);
+    fetchTrailers(movie.id, movie.media_type);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedMovie(null);
+    setTrailers([]);
+    setActiveTrailer(0);
+  };
+
+  // Enhanced Modal component for movie details
+  const MovieModal = ({ open, onClose, movie }) => {
+    if (!open || !movie) return null;
+
+    const {
+      title,
+      name,
+      poster_path,
+      backdrop_path,
+      first_air_date,
+      release_date,
+      overview,
+      vote_average,
+      vote_count,
+      media_type,
+      genre_ids
+    } = movie;
+
+    const formatDate = (dateString) => {
+      if (!dateString) return "Unknown";
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    };
+
+    return (
+      <div
+        className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
+        onClick={onClose}
+      >
+        <div
+          className="bg-gray-900 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header with backdrop */}
+          <div className="relative h-64 bg-gradient-to-b from-transparent to-gray-900">
+            {backdrop_path ? (
+              <img
+                src={`https://image.tmdb.org/t/p/w1280${backdrop_path}`}
+                alt="Backdrop"
+                className="w-full h-full object-cover opacity-60"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-blue-900 to-purple-900"></div>
+            )}
+            <div className="absolute top-4 right-4">
+              <button
+                onClick={onClose}
+                className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full transition-all duration-200"
+                aria-label="Close modal"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="absolute bottom-4 left-6 flex items-end space-x-4">
+              <img
+                src={poster_path ? `${img_300}${poster_path}` : imagenotfound}
+                alt="Poster"
+                className="w-24 h-36 rounded-lg shadow-lg border-2 border-white/20"
+              />
+              <div className="text-white pb-2">
+                <h2 className="text-3xl font-bold mb-2">{title || name}</h2>
+                <div className="flex items-center space-x-4 text-sm text-gray-300">
+                  <span className="flex items-center">
+                    <Calendar className="w-4 h-4 mr-1" />
+                    {formatDate(first_air_date || release_date)}
+                  </span>
+                  <span className="px-2 py-1 bg-blue-600 rounded-full text-xs font-medium">
+                    {media_type === "tv" ? "TV Series" : "Movie"}
+                  </span>
+                  {vote_average > 0 && (
+                    <span className="flex items-center bg-yellow-500 text-black px-2 py-1 rounded-full text-xs font-semibold">
+                      <Star className="w-3 h-3 mr-1" />
+                      {vote_average.toFixed(1)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Content area */}
+          <div className="p-6 overflow-y-auto max-h-[calc(90vh-16rem)]">
+            {/* Trailers Section */}
+            {loadingTrailers ? (
+              <div className="mb-6 bg-gray-800 rounded-xl p-6">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-700 rounded w-24 mb-4"></div>
+                  <div className="bg-gray-700 rounded-lg h-48"></div>
+                </div>
+              </div>
+            ) : trailers && trailers.length > 0 ? (
+              <div className="mb-6 bg-gray-800 rounded-xl p-6">
+                <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
+                  <Play className="w-5 h-5 mr-2 text-red-500" />
+                  Trailers & Videos
+                </h3>
+                
+                {/* Main video player */}
+                <div className="mb-4">
+                  <div className="relative bg-black rounded-lg overflow-hidden">
+                    <iframe
+                      width="100%"
+                      height="300"
+                      src={`https://www.youtube.com/embed/${trailers[activeTrailer]?.key}?rel=0`}
+                      title={trailers[activeTrailer]?.name}
+                      frameBorder="0"
+                      allowFullScreen
+                      className="w-full"
+                    ></iframe>
+                  </div>
+                  <div className="mt-2 px-2">
+                    <h4 className="text-white font-medium">{trailers[activeTrailer]?.name}</h4>
+                    <p className="text-gray-400 text-sm">{trailers[activeTrailer]?.type}</p>
+                  </div>
+                </div>
+
+                {/* Video thumbnails */}
+                {trailers.length > 1 && (
+                  <div className="space-y-2">
+                    <h4 className="text-white text-sm font-medium">More Videos</h4>
+                    <div className="flex space-x-3 overflow-x-auto pb-2">
+                      {trailers.map((trailer, index) => (
+                        <button
+                          key={trailer.key}
+                          onClick={() => setActiveTrailer(index)}
+                          className={`flex-shrink-0 group relative ${
+                            index === activeTrailer ? 'ring-2 ring-red-500' : ''
+                          }`}
+                        >
+                          <div className="w-32 h-18 bg-gray-700 rounded-lg overflow-hidden relative">
+                            <img
+                              src={`https://img.youtube.com/vi/${trailer.key}/mqdefault.jpg`}
+                              alt={trailer.name}
+                              className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Play className="w-6 h-6 text-white opacity-80" />
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-300 mt-1 w-32 truncate">
+                            {trailer.name}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="mb-6 bg-gray-800 rounded-xl p-6 text-center">
+                <Play className="w-12 h-12 text-gray-600 mx-auto mb-2" />
+                <p className="text-gray-400">No trailers available</p>
+              </div>
+            )}
+
+            {/* Overview Section */}
+            <div className="mb-6">
+              <h3 className="text-xl font-semibold text-white mb-3">Overview</h3>
+              <p className="text-gray-300 leading-relaxed">
+                {overview || "No overview available for this title."}
+              </p>
+            </div>
+
+            {/* Stats Section */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-gray-800 rounded-lg p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Star className="w-5 h-5 text-yellow-400 mr-1" />
+                  <span className="text-white font-semibold">
+                    {vote_average ? vote_average.toFixed(1) : "N/A"}
+                  </span>
+                </div>
+                <p className="text-gray-400 text-sm">Rating</p>
+              </div>
+              <div className="bg-gray-800 rounded-lg p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Users className="w-5 h-5 text-blue-400 mr-1" />
+                  <span className="text-white font-semibold">
+                    {vote_count ? vote_count.toLocaleString() : "0"}
+                  </span>
+                </div>
+                <p className="text-gray-400 text-sm">Votes</p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-3">
+              <button className="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center">
+                <Play className="w-5 h-5 mr-2" />
+                Watch Now
+              </button>
+              <button 
+                onClick={() => addToWatchlist()}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Add to Watchlist
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen py-8 bg-black flex flex-col items-center">
+      {/* Movie Modal */}
+      <MovieModal
+        open={modalOpen}
+        onClose={handleCloseModal}
+        movie={selectedMovie}
+      />
+      
+      /* Header Section */
+        <div className="flex flex-col items-center justify-center mb-8 relative">
+          <img src={logo} alt="WatchFinder Logo" className="w-70 mb-4" />
+          <div className="flex lg:w-xl md:w-full sm:w-full max-w-2xl bg-white/20 backdrop-blur-lg border border-white/30 p-8 rounded-2xl shadow-xl">
+            <input
+          type="text"
+          placeholder="Search for movies or TV shows..."
+          value={searchText}
+          onChange={Trigger}
+          className="flex-1 px-4 py-2 rounded-l-xl border-0 focus:outline-none text-gray-800 bg-white backdrop-blur-sm shadow-inner placeholder-gray-500"
+          onKeyPress={(e) => e.key === 'Enter' && Search()}
+            />
+            <button
+          className="bg-gradient-to-r from-gray-950 to-gray-700 backdrop-blur-sm text-white px-6 rounded-r-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+          onClick={Search}
+            >
+          <SearchCheck className="text-white" />
+            </button>
+          </div>
+          <Link to="/Watchlist" >
+            <div className="absolute top-5 right-5 flex items-center">
+          <Clapperboard className='text-white w-8 h-8' />
+          {number > 0 && (
+            <span className="ml-1 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              {number}
+            </span>
+          )}
+            </div>
+          </Link>
+        </div>
+        
+        {/* Results Section */}
+      <div className="container mx-auto px-4 flex justify-center">
+        <div className="grid justify-center grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {content && content.length > 0 ? (
+            content.map((movie) => {
+              const {
+                name,
+                title,
+                poster_path,
+                first_air_date,
+                release_date,
+                media_type,
+                vote_average,
+                vote_count,
+                overview,
+                id,
+              } = movie;
+              
+              return (
+                <div
+                  className="bg-white rounded-xl shadow-lg w-full overflow-hidden hover:scale-105 transition-transform duration-200 group mx-auto"
+                  style={{ maxWidth: "420px" }}
+                  key={id}
+                >
+                  <div className="relative">
+                    <img
+                      src={poster_path ? `${img_300}/${poster_path}` : imagenotfound}
+                      className="w-full h-72 object-cover transition-opacity duration-300 group-hover:opacity-80"
+                      alt={title || name || "Movie poster"}
+                      loading="lazy"
+                    />
+                    <span className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
+                      {media_type === "tv" ? "TV" : "Movie"}
+                    </span>
+                    {vote_average && (
+                      <span className="absolute top-2 right-2 flex items-center bg-yellow-400/90 text-black text-xs px-2 py-1 rounded-full font-semibold">
+                        {vote_average.toFixed(1)}
+                        <Star className="ml-1 w-4 h-4 text-yellow-700" />
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="p-4 flex flex-col h-56">
+                    <h5 className="text-lg font-semibold text-black text-center mb-1 truncate">
+                      {title || name}
+                    </h5>
+                    <div className="flex items-center justify-center text-xs text-gray-600 mb-2">
+                      <span>
+                        {first_air_date || release_date || "Unknown"}
+                      </span>
+                      {vote_count ? (
+                        <span className="ml-2 text-gray-400">({vote_count} votes)</span>
+                      ) : null}
+                    </div>
+                    <p className="text-gray-700 text-sm flex-1 mb-3 line-clamp-3 overflow-hidden">
+                      {overview || "No overview available."}
+                    </p>
+                    <div className="flex flex-col gap-2 mt-auto">
+                      <button 
+                        onClick={() => handleOpenModal(movie)}
+                        className="bg-blue-900 rounded text-white flex items-center justify-center w-full px-4 py-2 font-medium hover:bg-blue-800 transition"
+                      >
+                        <Info className='mr-1 w-4 text-white'/> More Info
+                      </button>
+                      <button 
+                        onClick={() => handleAddToWatchlist(movie)}
+                        className="bg-white border border-blue-900 flex items-center justify-center rounded text-blue-900 w-full px-4 py-2 font-medium hover:bg-blue-50 transition">
+                        <Plus className='mr-1 text-blue-800' /> Add to Watchlist
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : searchText.trim() ? (
+            <div className="col-span-full text-center text-white font-semibold text-xl mt-8">
+              No results found for "{searchText}"
+            </div>
+          ) : (
+            <div className="col-span-full text-center text-white/70 font-medium text-lg mt-8">
+              Search for movies or TV shows to get started
+            </div>
+          )}
+        </div>
+      </div>
+      
+    </div>
+  );
+}
+
+export default Home1
