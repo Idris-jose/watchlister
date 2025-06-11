@@ -1,12 +1,12 @@
 // Watchlist.jsx
 import { useWatchlist } from './Watchlistcontext.jsx';
-import { Star, X } from 'lucide-react';
+import { Star, X, MonitorCheck } from 'lucide-react';
 import imagenotfound from './assets/imagenotfound.png';
 
 const Watchlist = () => {
-  const { watchlist, removeFromWatchlist } = useWatchlist();
+  const { watchlist, removeFromWatchlist, addToWatched, isWatched } = useWatchlist();
   const img_300 = "https://image.tmdb.org/t/p/w300";
-
+  
   return (
     <div className="min-h-screen bg-black p-8">
       <div className="max-w-6xl mx-auto">
@@ -33,12 +33,14 @@ const Watchlist = () => {
                     alt={movie.title || movie.name}
                     className="w-full h-72 object-cover"
                   />
-                  <button
-                    onClick={() => removeFromWatchlist(movie.id)}
-                    className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  {isWatched(movie.id) && (
+                    <div className='absolute top-2 right-3 bg-green-500 rounded-full p-2 '> 
+
+                        <MonitorCheck className=' text-white  w-7 h-7 '/>
+
+                      </div>
+                  
+                  )}
                 </div>
                 <div className="p-4">
                   <h3 className="text-white font-semibold text-lg mb-2 line-clamp-2">
@@ -50,6 +52,24 @@ const Watchlist = () => {
                   <p className="text-gray-500 text-xs">
                     {movie.release_date || movie.first_air_date || "Unknown"}
                   </p>
+                </div>
+                <div className='flex gap-2 p-3 rounded-2xl'>
+                  <button
+                    onClick={() => removeFromWatchlist(movie.id)}
+                    className="bg-red-600 rounded hover:bg-red-700 text-white w-full p-2"
+                  >
+                    Remove
+                  </button>
+                  <button
+                    onClick={() => addToWatched(movie.id)}
+                    className={`rounded text-white w-full p-2 ${
+                      isWatched(movie.id) 
+                        ? 'bg-gray-600 hover:bg-gray-700' 
+                        : 'bg-green-600 hover:bg-green-700'
+                    }`}
+                  >
+                    {isWatched(movie.id) ? 'Watched' : 'Mark Watched'}
+                  </button>
                 </div>
               </div>
             ))}
