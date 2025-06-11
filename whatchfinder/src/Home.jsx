@@ -321,7 +321,7 @@ function Home1() {
         onClose={handleCloseModal}
         movie={selectedMovie}
       />
-      <toast />
+      
       /* Header Section */
         <div className="flex flex-col items-center justify-center mb-8 relative">
           <img src={logo} alt="WatchFinder Logo" className="w-70 mb-4" />
