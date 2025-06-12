@@ -35,6 +35,21 @@ const Watchlist = () => {
         if (aWatched !== bWatched) {
           return bWatched - aWatched; // watched first
         }
+
+        // fallback to date added (assuming original order is date added)
+        return 0;
+      });
+        }
+
+          else if (sortOption === 'unwatched') {
+      // Sort so watched items appear first, then by date added (newest first)
+      sorted.sort((a, b) => {
+        const aunWatched = !isWatched(a.id) ? 1 : 0;
+        const bunWatched = !isWatched(b.id) ? 1 : 0;
+        if (aunWatched !== bunWatched) {
+          return bunWatched - aunWatched; // watched first
+        }
+        
         // fallback to date added (assuming original order is date added)
         return 0;
       });
@@ -87,6 +102,7 @@ const Watchlist = () => {
               <option value="dateAdded">Date Added</option>
               <option value="title">Title</option>
               <option value="watched">watched</option>
+              <option value="unwatched">Unwatched</option>
             </select>
 
             <button
