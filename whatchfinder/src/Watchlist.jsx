@@ -20,28 +20,27 @@ const Watchlist = () => {
   // Sort filtered watchlist
   const sortedWatchlist = useMemo(() => {
     const sorted = [...filteredWatchlist];
-    if (sortOption === 'title') {
-      sorted.sort((a, b) => (a.title || a.name).localeCompare(b.title || b.name));
-    } else if (sortOption === 'dateAdded') {
-      // Assuming watchlist is in order of addition, newest last
-      // So reverse for newest first
+    if(sortOption == 'title') {
+      sorted.sort((a,b) => (a.title || a.name).localeCompare(b.title || b.name));
+    }
+    
+    else if (sortOption === 'dateAdded') {
+     
       sorted.reverse();
         }
         else if (sortOption === 'watched') {
       // Sort so watched items appear first, then by date added (newest first)
       sorted.sort((a, b) => {
-        const aWatched = isWatched(a.id) ? 1 : 0;
-        const bWatched = isWatched(b.id) ? 1 : 0;
+        const aWatched = isWatched(a.id) ? 1: 0;
+        const bWatched = isWatched(b.id) ? 1:0;
         if (aWatched !== bWatched) {
           return bWatched - aWatched; // watched first
         }
-
-        // fallback to date added (assuming original order is date added)
         return 0;
       });
-        }
+    }
 
-          else if (sortOption === 'unwatched') {
+      else if (sortOption === 'unwatched') {
       // Sort so watched items appear first, then by date added (newest first)
       sorted.sort((a, b) => {
         const aunWatched = !isWatched(a.id) ? 1 : 0;
