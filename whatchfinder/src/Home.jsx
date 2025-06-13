@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { SearchCheck, Star, Plus, Info, X, Play, Calendar, Clock, Users, Home,Clapperboard } from 'lucide-react'
+import { SearchCheck, Star, Plus, Info, X, Play, Calendar, Clock, Users, Home, Clapperboard, Tv } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import logo from './assets/logo.png'
 import imagenotfound from './assets/imagenotfound.png'
@@ -14,21 +14,51 @@ function Home1() {
   const [trailers, setTrailers] = useState([]);
   const [activeTrailer, setActiveTrailer] = useState(0);
   const [loadingTrailers, setLoadingTrailers] = useState(false);
- const  [success, setSuccess] =useState("")
+  const [movieDetails, setMovieDetails] = useState({}); // Store detailed info
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [success, setSuccess] = useState("")
+  
   const { addToWatchlist } = useWatchlist();
   const { number } = useWatchlist();
-  const {toast} = useWatchlist();
-  // Placeholder images
- 
+  const { toast } = useWatchlist();
+  
   // Image constants
   const img_300 = "https://image.tmdb.org/t/p/w300";
- 
+  const API_KEY = "56185e1e9a25474a6cf2f5748dfb6ebf";
+
+  // Fetch additional details for a movie/TV show
+  const fetchMovieDetails = async (movieId, mediaType) => {
+    try {
+      const endpoint = mediaType === 'tv' ? 'tv' : 'movie';
+      const response = await fetch(
+        `https://api.themoviedb.org/3/${endpoint}/${movieId}?api_key=${API_KEY}&language=en-US`
+      );
+      const details = await response.json();
+      
+      // Store details in our state object using the movie ID as key
+      setMovieDetails(prev => ({
+        ...prev,
+        [movieId]: {
+          runtime: details.runtime || null,
+          number_of_seasons: details.number_of_seasons || null,
+          seasons: details.seasons || null,
+          episode_run_time: details.episode_run_time || null,
+          genres: details.genres || [],
+          status: details.status || null,
+          tagline: details.tagline || null
+        }
+      }));
+    } catch (error) {
+      console.error("Error fetching movie details:", error);
+    }
+  };
+
   const fetchTrailers = async (movieId, mediaType) => {
     setLoadingTrailers(true);
     try {
       const endpoint = mediaType === 'tv' ? 'tv' : 'movie';
       const data = await fetch(
-        `https://api.themoviedb.org/3/${endpoint}/${movieId}/videos?api_key=56185e1e9a25474a6cf2f5748dfb6ebf&language=en-US`
+        `https://api.themoviedb.org/3/${endpoint}/${movieId}/videos?api_key=${API_KEY}&language=en-US`
       );
       const { results } = await data.json();
       
@@ -54,10 +84,19 @@ function Home1() {
   const fetchSearch = async () => {
     try {
       const data = await fetch(
-        `https://api.themoviedb.org/3/search/multi?api_key=56185e1e9a25474a6cf2f5748dfb6ebf&language=en-US&query=${searchText}&page=${page}&include_adult=false`
+        `https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&language=en-US&query=${searchText}&page=${page}&include_adult=false`
       );
       const { results } = await data.json();
       setContent(results || []);
+      
+      // Fetch additional details for each result
+      if (results && results.length > 0) {
+        results.forEach(movie => {
+          if (movie.id && movie.media_type) {
+            fetchMovieDetails(movie.id, movie.media_type);
+          }
+        });
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
       setContent([]);
@@ -69,6 +108,7 @@ function Home1() {
       fetchSearch();
     } else {
       setContent([]);
+      setMovieDetails({}); // Clear details when search is cleared
     }
   }, [searchText]);
  
@@ -86,16 +126,30 @@ function Home1() {
     const movieToAdd = movie || selectedMovie;
     if (!movieToAdd) return;
     
-    addToWatchlist(movieToAdd);
+    // Include additional details if available
+    const enhancedMovie = {
+      ...movieToAdd,
+      ...movieDetails[movieToAdd.id]
+    };
+    
+    addToWatchlist(enhancedMovie);
     console.log("success");
     
     if (!movie) handleCloseModal();
   };
 
-  const handleOpenModal = (movie) => {
+  const handleOpenModal = async (movie) => {
     setSelectedMovie(movie);
     setModalOpen(true);
+    setLoadingDetails(true);
+    
+    // Fetch additional details if not already loaded
+    if (!movieDetails[movie.id]) {
+      await fetchMovieDetails(movie.id, movie.media_type);
+    }
+    
     fetchTrailers(movie.id, movie.media_type);
+    setLoadingDetails(false);
   };
 
   const handleCloseModal = () => {
@@ -103,6 +157,15 @@ function Home1() {
     setSelectedMovie(null);
     setTrailers([]);
     setActiveTrailer(0);
+    setLoadingDetails(false);
+  };
+
+  // Helper function to format runtime
+  const formatRuntime = (minutes) => {
+    if (!minutes) return null;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   };
 
   // Enhanced Modal component for movie details
@@ -122,6 +185,9 @@ function Home1() {
       media_type,
       genre_ids
     } = movie;
+
+    // Get additional details for this movie
+    const details = movieDetails[movie.id] || {};
 
     const formatDate = (dateString) => {
       if (!dateString) return "Unknown";
@@ -169,7 +235,7 @@ function Home1() {
               />
               <div className="text-white pb-2">
                 <h2 className="text-3xl font-bold mb-2">{title || name}</h2>
-                <div className="flex items-center space-x-4 text-sm text-gray-300">
+                <div className="flex items-center space-x-4 text-sm text-gray-300 flex-wrap">
                   <span className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
                     {formatDate(first_air_date || release_date)}
@@ -177,6 +243,20 @@ function Home1() {
                   <span className="px-2 py-1 bg-blue-600 rounded-full text-xs font-medium">
                     {media_type === "tv" ? "TV Series" : "Movie"}
                   </span>
+                  {/* Runtime for movies */}
+                  {media_type === 'movie' && details.runtime && (
+                    <span className="flex items-center">
+                      <Clock className="w-4 h-4 mr-1" />
+                      {formatRuntime(details.runtime)}
+                    </span>
+                  )}
+                  {/* Seasons for TV shows */}
+                  {media_type === 'tv' && details.number_of_seasons && (
+                    <span className="flex items-center">
+                      <Tv className="w-4 h-4 mr-1" />
+                      {details.number_of_seasons} Season{details.number_of_seasons !== 1 ? 's' : ''}
+                    </span>
+                  )}
                   {vote_average > 0 && (
                     <span className="flex items-center bg-yellow-500 text-black px-2 py-1 rounded-full text-xs font-semibold">
                       <Star className="w-3 h-3 mr-1" />
@@ -184,12 +264,67 @@ function Home1() {
                     </span>
                   )}
                 </div>
+                {/* Tagline */}
+                {details.tagline && (
+                  <p className="text-gray-300 italic text-sm mt-2">"{details.tagline}"</p>
+                )}
               </div>
             </div>
           </div>
 
           {/* Content area */}
           <div className="p-6 overflow-y-auto max-h-[calc(90vh-16rem)]">
+            {/* Loading state for details */}
+            {loadingDetails && (
+              <div className="mb-6 bg-gray-800 rounded-xl p-6">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-700 rounded w-32 mb-2"></div>
+                  <div className="h-4 bg-gray-700 rounded w-24"></div>
+                </div>
+              </div>
+            )}
+
+            {/* Additional Info Section */}
+            {details && Object.keys(details).length > 0 && (
+              <div className="mb-6 bg-gray-800 rounded-xl p-6">
+                <h3 className="text-xl font-semibold text-white mb-4">Details</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                  {media_type === 'movie' && details.runtime && (
+                    <div>
+                      <span className="text-gray-400">Runtime:</span>
+                      <p className="text-white font-medium">{formatRuntime(details.runtime)}</p>
+                    </div>
+                  )}
+                  {media_type === 'tv' && details.number_of_seasons && (
+                    <div>
+                      <span className="text-gray-400">Seasons:</span>
+                      <p className="text-white font-medium">{details.number_of_seasons}</p>
+                    </div>
+                  )}
+                  {media_type === 'tv' && details.episode_run_time && details.episode_run_time.length > 0 && (
+                    <div>
+                      <span className="text-gray-400">Episode Length:</span>
+                      <p className="text-white font-medium">{details.episode_run_time[0]} min</p>
+                    </div>
+                  )}
+                  {details.status && (
+                    <div>
+                      <span className="text-gray-400">Status:</span>
+                      <p className="text-white font-medium">{details.status}</p>
+                    </div>
+                  )}
+                  {details.genres && details.genres.length > 0 && (
+                    <div className="col-span-2 md:col-span-3">
+                      <span className="text-gray-400">Genres:</span>
+                      <p className="text-white font-medium">
+                        {details.genres.map(genre => genre.name).join(', ')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Trailers Section */}
             {loadingTrailers ? (
               <div className="mb-6 bg-gray-800 rounded-xl p-6">
@@ -322,36 +457,35 @@ function Home1() {
         movie={selectedMovie}
       />
       
-      /* Header Section */
-        <div className="flex flex-col items-center justify-center mb-8 relative">
-          <img src={logo} alt="WatchFinder Logo" className="w-70 mb-4" />
-          
-              
-            <div className="flex items-center bg-gray-900 rounded p-2 lg:w-2xl md:w-xl sm:w-lg">
-            <SearchCheck className="w-5 h-5 text-gray-400 mr-2" />
-            <input
-              type="text"
-              placeholder="Search for movies or TV shows..."
-              value={searchText}
-               onChange={Trigger}
-              className="bg-transparent text-white w-full focus:outline-none"
-              aria-label="Search watchlist"
-            />
-          </div>
-
-          <Link to="/Watchlist" >
-            <div className="absolute top-5 right-5 flex items-center">
-          <Clapperboard className='text-white w-8 h-8' />
-          {number > 0 && (
-            <span className="ml-1 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-              {number}
-            </span>
-          )}
-            </div>
-          </Link>
-        </div>
+      {/* Header Section */}
+      <div className="flex flex-col items-center justify-center mb-8 relative">
+        <img src={logo} alt="WatchFinder Logo" className="w-70 mb-4" />
         
-        {/* Results Section */}
+        <div className="flex items-center bg-gray-900 rounded p-2 lg:w-2xl md:w-xl sm:w-lg">
+          <SearchCheck className="w-5 h-5 text-gray-400 mr-2" />
+          <input
+            type="text"
+            placeholder="Search for movies or TV shows..."
+            value={searchText}
+            onChange={Trigger}
+            className="bg-transparent text-white w-full focus:outline-none"
+            aria-label="Search watchlist"
+          />
+        </div>
+
+        <Link to="/Watchlist">
+          <div className="absolute top-5 right-5 flex items-center">
+            <Clapperboard className='text-white w-8 h-8' />
+            {number > 0 && (
+              <span className="ml-1 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                {number}
+              </span>
+            )}
+          </div>
+        </Link>
+      </div>
+        
+      {/* Results Section */}
       <div className="container mx-auto px-4 flex justify-center">
         <div className="grid justify-center grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {content && content.length > 0 ? (
@@ -368,6 +502,9 @@ function Home1() {
                 overview,
                 id,
               } = movie;
+              
+              // Get additional details for this movie
+              const details = movieDetails[id] || {};
               
               return (
                 <div
@@ -389,6 +526,22 @@ function Home1() {
                       <span className="absolute top-2 right-2 flex items-center bg-yellow-400/90 text-black text-xs px-2 py-1 rounded-full font-semibold">
                         {vote_average.toFixed(1)}
                         <Star className="ml-1 w-4 h-4 text-yellow-700" />
+                      </span>
+                    )}
+                    {/* Show runtime/seasons on card */}
+                    {(details.runtime || details.number_of_seasons) && (
+                      <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center">
+                        {media_type === 'movie' && details.runtime ? (
+                          <>
+                            <Clock className="w-3 h-3 mr-1" />
+                            {formatRuntime(details.runtime)}
+                          </>
+                        ) : media_type === 'tv' && details.number_of_seasons ? (
+                          <>
+                            <Tv className="w-3 h-3 mr-1" />
+                            {details.number_of_seasons} Season{details.number_of_seasons !== 1 ? 's' : ''}
+                          </>
+                        ) : null}
                       </span>
                     )}
                   </div>
@@ -436,7 +589,6 @@ function Home1() {
           )}
         </div>
       </div>
-      
     </div>
   );
 }
