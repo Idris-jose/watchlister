@@ -264,10 +264,7 @@ function Home1() {
                     </span>
                   )}
                 </div>
-                {/* Tagline */}
-                {details.tagline && (
-                  <p className="text-gray-300 italic text-sm mt-2">"{details.tagline}"</p>
-                )}
+               
               </div>
             </div>
           </div>
