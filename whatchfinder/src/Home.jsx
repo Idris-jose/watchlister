@@ -325,22 +325,20 @@ function Home1() {
       /* Header Section */
         <div className="flex flex-col items-center justify-center mb-8 relative">
           <img src={logo} alt="WatchFinder Logo" className="w-70 mb-4" />
-          <div className="flex lg:w-xl md:w-full sm:w-full max-w-2xl bg-white/20 backdrop-blur-lg border border-white/30 p-8 rounded-2xl shadow-xl">
+          
+              
+            <div className="flex items-center bg-gray-900 rounded p-2 lg:w-2xl md:w-xl sm:w-lg">
+            <SearchCheck className="w-5 h-5 text-gray-400 mr-2" />
             <input
-          type="text"
-          placeholder="Search for movies or TV shows..."
-          value={searchText}
-          onChange={Trigger}
-          className="flex-1 px-4 py-2 rounded-l-xl border-0 focus:outline-none text-gray-800 bg-white backdrop-blur-sm shadow-inner placeholder-gray-500"
-          onKeyPress={(e) => e.key === 'Enter' && Search()}
+              type="text"
+              placeholder="Search for movies or TV shows..."
+              value={searchText}
+               onChange={Trigger}
+              className="bg-transparent text-white w-full focus:outline-none"
+              aria-label="Search watchlist"
             />
-            <button
-          className="bg-gradient-to-r from-gray-950 to-gray-700 backdrop-blur-sm text-white px-6 rounded-r-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-          onClick={Search}
-            >
-          <SearchCheck className="text-white" />
-            </button>
           </div>
+
           <Link to="/Watchlist" >
             <div className="absolute top-5 right-5 flex items-center">
           <Clapperboard className='text-white w-8 h-8' />
