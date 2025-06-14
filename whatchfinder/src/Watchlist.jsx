@@ -138,6 +138,9 @@ const Watchlist = () => {
                       <MonitorCheck className=' text-white  w-7 h-7 ' />
                     </div>
                   )}
+
+                 
+                  
                 </div>
                 <div className="p-4">
                   <h3 className="text-white font-semibold text-lg mb-2 line-clamp-2">

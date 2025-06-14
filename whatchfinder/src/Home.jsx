@@ -1,139 +1,46 @@
-import { useState, useEffect } from 'react'
-import { SearchCheck, Star, Plus, Info, X, Play, Calendar, Clock, Users, Home, Clapperboard, Tv } from 'lucide-react'
+
+import { useState } from 'react'
+import { SearchCheck, Star, Plus, Info, X, Play, Calendar, Clock, Users, Clapperboard, Tv } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import logo from './assets/logo.png'
 import imagenotfound from './assets/imagenotfound.png'
 import { useWatchlist } from './Watchlistcontext.jsx';
 
 function Home1() {
-  const [searchText, setSearchText] = useState("");
-  const [content, setContent] = useState([]);
-  const [page] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState(null);
-  const [trailers, setTrailers] = useState([]);
   const [activeTrailer, setActiveTrailer] = useState(0);
-  const [loadingTrailers, setLoadingTrailers] = useState(false);
-  const [movieDetails, setMovieDetails] = useState({}); // Store detailed info
-  const [loadingDetails, setLoadingDetails] = useState(false);
-  const [success, setSuccess] = useState("")
   
-  const { addToWatchlist } = useWatchlist();
-  const { number } = useWatchlist();
-  const { toast } = useWatchlist();
-  
-  // Image constants
-  const img_300 = "https://image.tmdb.org/t/p/w300";
-  const API_KEY = "56185e1e9a25474a6cf2f5748dfb6ebf";
-
-  // Fetch additional details for a movie/TV show
-  const fetchMovieDetails = async (movieId, mediaType) => {
-    try {
-      const endpoint = mediaType === 'tv' ? 'tv' : 'movie';
-      const response = await fetch(
-        `https://api.themoviedb.org/3/${endpoint}/${movieId}?api_key=${API_KEY}&language=en-US`
-      );
-      const details = await response.json();
-      
-      // Store details in our state object using the movie ID as key
-      setMovieDetails(prev => ({
-        ...prev,
-        [movieId]: {
-          runtime: details.runtime || null,
-          number_of_seasons: details.number_of_seasons || null,
-          seasons: details.seasons || null,
-          episode_run_time: details.episode_run_time || null,
-          genres: details.genres || [],
-          status: details.status || null,
-          tagline: details.tagline || null
-        }
-      }));
-    } catch (error) {
-      console.error("Error fetching movie details:", error);
-    }
-  };
-
-  const fetchTrailers = async (movieId, mediaType) => {
-    setLoadingTrailers(true);
-    try {
-      const endpoint = mediaType === 'tv' ? 'tv' : 'movie';
-      const data = await fetch(
-        `https://api.themoviedb.org/3/${endpoint}/${movieId}/videos?api_key=${API_KEY}&language=en-US`
-      );
-      const { results } = await data.json();
-      
-      // Filter for YouTube trailers only and sort by type preference
-      const youtubeTrailers = results?.filter(
-        video => video.site === 'YouTube' && 
-        (video.type === 'Trailer' || video.type === 'Teaser' || video.type === 'Clip')
-      ).sort((a, b) => {
-        const typeOrder = { 'Trailer': 0, 'Teaser': 1, 'Clip': 2 };
-        return typeOrder[a.type] - typeOrder[b.type];
-      }) || [];
-      
-      setTrailers(youtubeTrailers);
-      setActiveTrailer(0);
-    } catch (error) {
-      console.error("Error fetching trailers:", error);
-      setTrailers([]);
-    } finally {
-      setLoadingTrailers(false);
-    }
-  }
-
-  const fetchSearch = async () => {
-    try {
-      const data = await fetch(
-        `https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&language=en-US&query=${searchText}&page=${page}&include_adult=false`
-      );
-      const { results } = await data.json();
-      setContent(results || []);
-      
-      // Fetch additional details for each result
-      if (results && results.length > 0) {
-        results.forEach(movie => {
-          if (movie.id && movie.media_type) {
-            fetchMovieDetails(movie.id, movie.media_type);
-          }
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      setContent([]);
-    }
-  };
-
-  useEffect(() => {
-    if (searchText.trim()) {
-      fetchSearch();
-    } else {
-      setContent([]);
-      setMovieDetails({}); // Clear details when search is cleared
-    }
-  }, [searchText]);
- 
-  const Trigger = (e) => {
-    setSearchText(e.target.value);
-  };
- 
-  const Search = () => {
-    if (searchText.trim()) {
-      fetchSearch();
-    }
-  };
+  const {
+    // Search functionality
+    searchText,
+    searchResults,
+    updateSearchText,
+    isSearching,
+    
+    // Movie details
+    movieDetails,
+    getMovieDetails,
+    fetchMovieDetails,
+    
+    // Trailers
+    trailers,
+    fetchTrailers,
+    loadingTrailers,
+    
+    // Watchlist functionality
+    addToWatchlist,
+    number,
+    
+    // Constants
+    img_300,
+  } = useWatchlist();
 
   const handleAddToWatchlist = (movie) => {
     const movieToAdd = movie || selectedMovie;
     if (!movieToAdd) return;
     
-    // Include additional details if available
-    const enhancedMovie = {
-      ...movieToAdd,
-      ...movieDetails[movieToAdd.id]
-    };
-    
-    addToWatchlist(enhancedMovie);
-    console.log("success");
+    addToWatchlist(movieToAdd);
     
     if (!movie) handleCloseModal();
   };
@@ -141,23 +48,21 @@ function Home1() {
   const handleOpenModal = async (movie) => {
     setSelectedMovie(movie);
     setModalOpen(true);
-    setLoadingDetails(true);
     
     // Fetch additional details if not already loaded
-    if (!movieDetails[movie.id]) {
+    const details = getMovieDetails(movie.id);
+    if (!details || Object.keys(details).length === 0) {
       await fetchMovieDetails(movie.id, movie.media_type);
     }
     
-    fetchTrailers(movie.id, movie.media_type);
-    setLoadingDetails(false);
+    const fetchedTrailers = await fetchTrailers(movie.id, movie.media_type);
+    setActiveTrailer(0);
   };
 
   const handleCloseModal = () => {
     setModalOpen(false);
     setSelectedMovie(null);
-    setTrailers([]);
     setActiveTrailer(0);
-    setLoadingDetails(false);
   };
 
   // Helper function to format runtime
@@ -183,11 +88,10 @@ function Home1() {
       vote_average,
       vote_count,
       media_type,
-      genre_ids
     } = movie;
 
     // Get additional details for this movie
-    const details = movieDetails[movie.id] || {};
+    const details = getMovieDetails(movie.id);
 
     const formatDate = (dateString) => {
       if (!dateString) return "Unknown";
@@ -264,23 +168,12 @@ function Home1() {
                     </span>
                   )}
                 </div>
-               
               </div>
             </div>
           </div>
 
           {/* Content area */}
           <div className="p-6 overflow-y-auto max-h-[calc(90vh-16rem)]">
-            {/* Loading state for details */}
-            {loadingDetails && (
-              <div className="mb-6 bg-gray-800 rounded-xl p-6">
-                <div className="animate-pulse">
-                  <div className="h-4 bg-gray-700 rounded w-32 mb-2"></div>
-                  <div className="h-4 bg-gray-700 rounded w-24"></div>
-                </div>
-              </div>
-            )}
-
             {/* Additional Info Section */}
             {details && Object.keys(details).length > 0 && (
               <div className="mb-6 bg-gray-800 rounded-xl p-6">
@@ -464,7 +357,7 @@ function Home1() {
             type="text"
             placeholder="Search for movies or TV shows..."
             value={searchText}
-            onChange={Trigger}
+            onChange={(e) => updateSearchText(e.target.value)}
             className="bg-transparent text-white w-full focus:outline-none"
             aria-label="Search watchlist"
           />
@@ -482,11 +375,19 @@ function Home1() {
         </Link>
       </div>
         
+      {/* Loading indicator */}
+      {isSearching && (
+        <div className="text-white text-center mb-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+          <p className="mt-2">Searching...</p>
+        </div>
+      )}
+
       {/* Results Section */}
       <div className="container mx-auto px-4 flex justify-center">
         <div className="grid justify-center grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {content && content.length > 0 ? (
-            content.map((movie) => {
+          {searchResults && searchResults.length > 0 ? (
+            searchResults.map((movie) => {
               const {
                 name,
                 title,
@@ -501,7 +402,7 @@ function Home1() {
               } = movie;
               
               // Get additional details for this movie
-              const details = movieDetails[id] || {};
+              const details = getMovieDetails(id);
               
               return (
                 <div
@@ -519,7 +420,7 @@ function Home1() {
                     <span className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
                       {media_type === "tv" ? "TV" : "Movie"}
                     </span>
-                    {vote_average && (
+                    {vote_average > 0 && (
                       <span className="absolute top-2 right-2 flex items-center bg-yellow-400/90 text-black text-xs px-2 py-1 rounded-full font-semibold">
                         {vote_average.toFixed(1)}
                         <Star className="ml-1 w-4 h-4 text-yellow-700" />
