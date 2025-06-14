@@ -406,7 +406,7 @@ function Home1() {
               
               return (
                 <div
-                  className="bg-white rounded-xl shadow-lg w-full overflow-hidden hover:scale-105 transition-transform duration-200 group mx-auto"
+                  className="bg-gray-900 rounded-xl shadow-lg w-full overflow-hidden hover:scale-105 transition-transform duration-200 group mx-auto"
                   style={{ maxWidth: "420px" }}
                   key={id}
                 >
@@ -445,7 +445,7 @@ function Home1() {
                   </div>
                   
                   <div className="p-4 flex flex-col h-56">
-                    <h5 className="text-lg font-semibold text-black text-center mb-1 truncate">
+                    <h5 className="text-lg font-semibold text-white text-center mb-1 truncate">
                       {title || name}
                     </h5>
                     <div className="flex items-center justify-center text-xs text-gray-600 mb-2">
@@ -456,7 +456,7 @@ function Home1() {
                         <span className="ml-2 text-gray-400">({vote_count} votes)</span>
                       ) : null}
                     </div>
-                    <p className="text-gray-700 text-sm flex-1 mb-3 line-clamp-3 overflow-hidden">
+                    <p className="text-white text-sm flex-1 mb-3 line-clamp-3 overflow-hidden">
                       {overview || "No overview available."}
                     </p>
                     <div className="flex flex-col gap-2 mt-auto">
