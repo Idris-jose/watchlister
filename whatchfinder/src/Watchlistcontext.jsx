@@ -192,7 +192,8 @@ export const WatchlistProvider = ({ children }) => {
         duration: 3000,
         position: 'top-right',
       });
-    } else {
+    } 
+    else {
       toast.error(`${movieToAdd.title || movieToAdd.name} has already been added to your watched!`, {
         duration: 3000,
         position: 'top-right',
@@ -218,6 +219,7 @@ export const WatchlistProvider = ({ children }) => {
         ...movie,
         ...movieDetails[movie.id]
       };
+      
       
       setWatchlist(prev => [...prev, enhancedMovie]);
       setNumber(prev => prev + 1);

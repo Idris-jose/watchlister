@@ -140,7 +140,13 @@ const Watchlist = () => {
                   )}
 
                  
-                  
+                  <button
+                    onClick={() => handleRemove(movie.id)}
+                    className="absolute top-2 left-3 bg-gray-800 rounded-full p-2 hover:bg-gray-700 transition-colors"
+                    aria-label="Remove from watchlist"
+                  >
+                    <X className="w-5 h-5 text-white" />
+                  </button>
                 </div>
                 <div className="p-4">
                   <h3 className="text-white font-semibold text-lg mb-2 line-clamp-2">
@@ -154,12 +160,7 @@ const Watchlist = () => {
                   </p>
                 </div>
                 <div className='flex gap-2 p-3 rounded-2xl'>
-                  <button
-                    onClick={() => handleRemove(movie.id)}
-                    className="bg-red-600 rounded hover:bg-red-700 text-white w-full p-2"
-                  >
-                    Remove
-                  </button>
+                 
                   <button
                     onClick={() => addToWatched(movie.id)}
                     className={`rounded text-white w-full p-2 ${
