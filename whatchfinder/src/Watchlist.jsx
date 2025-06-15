@@ -142,7 +142,7 @@ const Watchlist = () => {
                  
                   <button
                     onClick={() => handleRemove(movie.id)}
-                    className="absolute top-2 left-3 bg-gray-800 rounded-full p-2 hover:bg-gray-700 transition-colors"
+                    className="absolute top-2 left-3 bg-red-600 rounded-full p-2 hover:bg-red-700 transition-colors"
                     aria-label="Remove from watchlist"
                   >
                     <X className="w-5 h-5 text-white" />
@@ -169,7 +169,7 @@ const Watchlist = () => {
                         : 'bg-green-600 hover:bg-green-700'
                     }`}
                   >
-                    {isWatched(movie.id) ? 'Watched' : 'Mark Watched'}
+                    {isWatched(movie.id) ? 'Mark as unWatched' : 'Mark Watched'}
                   </button>
                 </div>
               </div>
