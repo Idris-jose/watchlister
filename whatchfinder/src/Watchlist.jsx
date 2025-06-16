@@ -9,6 +9,7 @@ const Watchlist = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState('dateAdded'); // 'dateAdded' or 'title'
+  const [priority, setPriority] = useState("Low"); // Default priority for trailers
 
   // Filter watchlist by search term
   const filteredWatchlist = useMemo(() => {
@@ -100,8 +101,9 @@ const Watchlist = () => {
             >
               <option value="dateAdded">Date Added</option>
               <option value="title">Title</option>
-              <option value="watched">watched</option>
+              <option value="watched">Watched</option>
               <option value="unwatched">Unwatched</option>
+              <option value="priority">Priority</option>
             </select>
 
             <button
@@ -139,7 +141,20 @@ const Watchlist = () => {
                     </div>
                   )}
 
-                 
+                  <div className="absolute bottom-2 right-3">
+                    <select
+                      value={priority}
+                      onChange={(e) => {
+                        setPriority(e.target.value);
+                        movie.priority = e.target.value; // Update movie priority
+                      }}
+                      className="bg-gray-800 text-white rounded p-1 text-xs"
+                    >
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
                   <button
                     onClick={() => handleRemove(movie.id)}
                     className="absolute top-2 left-3 bg-red-600 rounded-full p-2 hover:bg-red-700 transition-colors"
@@ -158,9 +173,11 @@ const Watchlist = () => {
                   <p className="text-gray-500 text-xs">
                     {movie.release_date || movie.first_air_date || "Unknown"}
                   </p>
+                  <p className="text-yellow-400 text-xs mt-1">
+                    Priority: {movie.priority ? movie.priority.charAt(0).toUpperCase() + movie.priority.slice(1) : "Medium"}
+                  </p>
                 </div>
                 <div className='flex gap-2 p-3 rounded-2xl'>
-                 
                   <button
                     onClick={() => addToWatched(movie.id)}
                     className={`rounded text-white w-full p-2 ${
@@ -174,7 +191,6 @@ const Watchlist = () => {
                 </div>
               </div>
             ))}
-          
           </div>
         )}
       </div>

@@ -34,7 +34,10 @@ export const WatchlistProvider = ({ children }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [loadingTrailers, setLoadingTrailers] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [priority, setPriority] = useState(""); // Default priority for trailers
+  const [priorityMap, setPriorityMap] = useState({}); // Store priority per movieId
 
+  
   // Constants
   const API_KEY = "56185e1e9a25474a6cf2f5748dfb6ebf";
   const img_300 = "https://image.tmdb.org/t/p/w300";
@@ -47,6 +50,8 @@ export const WatchlistProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem(WATCHED_STORAGE_KEY, JSON.stringify(watched));
   }, [watched]);
+
+ 
 
   // Fetch additional details for a movie/TV show
   const fetchMovieDetails = async (movieId, mediaType) => {
