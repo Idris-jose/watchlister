@@ -174,6 +174,7 @@ const Watchlist = () => {
                 </div>
               </div>
             ))}
+          
           </div>
         )}
       </div>

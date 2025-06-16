@@ -185,27 +185,27 @@ export const WatchlistProvider = ({ children }) => {
       return;
     }
 
-    if (!watched.some((m) => m.id === movieId)) {
-      setWatched(prev => [...prev, movieToAdd]);
+  if (!watched.some((m) => m.id === movieId)) {
+    setWatched(prev => [...prev, movieToAdd]);
+    
 
-      toast.success(`${movieToAdd.title || movieToAdd.name} has been added to your watched!`, {
-        duration: 3000,
-        position: 'top-right',
-      });
-        } else if (watched.some((m) => m.id === movieId)) {
-      // If already watched, remove from watched and notify
-      setWatched(prev => prev.filter(movie => movie.id !== movieId));
-      toast.error(`${movieToAdd.title || movieToAdd.name} has been removed from your watched!`, {
-        duration: 3000,
-        position: 'top-right',
-      });
-        }
-        else {
-      toast.error(`${movieToAdd.title || movieToAdd.name} has already been added to your watched!`, {
-        duration: 3000,
-        position: 'top-right',
-      });
-    }
+    toast.success(`${movieToAdd.title || movieToAdd.name} has been added to your watched!`, {
+      duration: 3000,
+      position: 'top-right',
+    });
+  } else if (watched.some((m) => m.id === movieId)) {
+    // If already watched, remove from watched and notify
+    setWatched(prev => prev.filter(movie => movie.id !== movieId));
+    toast.error(`${movieToAdd.title || movieToAdd.name} has been removed from your watched!`, {
+      duration: 3000,
+      position: 'top-right',
+    });
+  } else {
+    toast.error(`${movieToAdd.title || movieToAdd.name} has already been added to your watched!`, {
+      duration: 3000,
+      position: 'top-right',
+    });
+  }
   };
 
   const removeFromWatched = (movieId) => {
