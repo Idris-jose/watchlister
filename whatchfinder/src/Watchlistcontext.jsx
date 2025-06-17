@@ -224,12 +224,13 @@ export const WatchlistProvider = ({ children }) => {
     setWatched(prev => prev.filter(movie => movie.id !== movieId));
   };
 
-  const addToWatchlist = (movie) => {
+  const addToWatchlist = (movie, priority = "medium") => {
     if (!watchlist.some((m) => m.id === movie.id)) {
       // Include additional details if available
       const enhancedMovie = {
         ...movie,
-        ...movieDetails[movie.id]
+        ...movieDetails[movie.id],
+        priority: priority.toLowerCase()
       };
       
       
@@ -269,6 +270,14 @@ export const WatchlistProvider = ({ children }) => {
     });
   };
 
+  const updatePriority = (movieId, newPriority) => {
+    setWatchlist(prevWatchlist =>
+      prevWatchlist.map(movie =>
+        movie.id === movieId ? { ...movie, priority: newPriority.toLowerCase() } : movie
+      )
+    );
+  };
+
   return (
     <WatchlistContext.Provider value={{
       // Existing watchlist functionality
@@ -281,7 +290,7 @@ export const WatchlistProvider = ({ children }) => {
       isWatched,
       number,
       clearWatchlist,
-      
+      updatePriority,
       // New search and details functionality
       searchText,
       searchResults,

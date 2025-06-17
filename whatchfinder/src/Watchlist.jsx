@@ -4,12 +4,11 @@ import { Star, X, MonitorCheck, Search, Trash2 } from 'lucide-react';
 import imagenotfound from './assets/imagenotfound.png';
 
 const Watchlist = () => {
-  const { watchlist, removeFromWatchlist, addToWatched, isWatched, clearWatchlist } = useWatchlist();
+  const { watchlist, removeFromWatchlist, addToWatched, isWatched, clearWatchlist, updatePriority } = useWatchlist();
   const img_300 = "https://image.tmdb.org/t/p/w300";
 
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState('dateAdded'); // 'dateAdded' or 'title'
-  const [priority, setPriority] = useState("Low"); // Default priority for trailers
 
   // Filter watchlist by search term
   const filteredWatchlist = useMemo(() => {
@@ -21,15 +20,13 @@ const Watchlist = () => {
   // Sort filtered watchlist
   const sortedWatchlist = useMemo(() => {
     const sorted = [...filteredWatchlist];
-    if(sortOption == 'title') {
+    if(sortOption === 'title') {
       sorted.sort((a,b) => (a.title || a.name).localeCompare(b.title || b.name));
     }
-    
     else if (sortOption === 'dateAdded') {
-     
       sorted.reverse();
-        }
-        else if (sortOption === 'watched') {
+    }
+    else if (sortOption === 'watched') {
       // Sort so watched items appear first, then by date added (newest first)
       sorted.sort((a, b) => {
         const aWatched = isWatched(a.id) ? 1: 0;
@@ -40,22 +37,28 @@ const Watchlist = () => {
         return 0;
       });
     }
-
-      else if (sortOption === 'unwatched') {
-      // Sort so watched items appear first, then by date added (newest first)
+    else if (sortOption === 'unwatched') {
+      // Sort so unwatched items appear first
       sorted.sort((a, b) => {
-        const aunWatched = !isWatched(a.id) ? 1 : 0;
-        const bunWatched = !isWatched(b.id) ? 1 : 0;
-        if (aunWatched !== bunWatched) {
-          return bunWatched - aunWatched; // watched first
+        const aUnwatched = !isWatched(a.id) ? 1 : 0;
+        const bUnwatched = !isWatched(b.id) ? 1 : 0;
+        if (aUnwatched !== bUnwatched) {
+          return bUnwatched - aUnwatched; // unwatched first
         }
-        
-        // fallback to date added (assuming original order is date added)
         return 0;
       });
-        }
+    }
+    else if (sortOption === 'priority') {
+      // Sort by priority: high > medium > low
+      const priorityOrder = { high: 3, medium: 2, low: 1 };
+      sorted.sort((a, b) => {
+        const aPriority = priorityOrder[a.priority?.toLowerCase()] || 2;
+        const bPriority = priorityOrder[b.priority?.toLowerCase()] || 2;
+        return bPriority - aPriority; // higher priority first
+      });
+    }
     return sorted;
-  }, [filteredWatchlist, sortOption]);
+  }, [filteredWatchlist, sortOption, isWatched]);
 
   const handleRemove = (movieId) => {
     if (window.confirm('Are you sure you want to remove this movie from your watchlist?')) {
@@ -143,10 +146,9 @@ const Watchlist = () => {
 
                   <div className="absolute bottom-2 right-3">
                     <select
-                      value={priority}
+                      value={movie.priority || "medium"}
                       onChange={(e) => {
-                        setPriority(e.target.value);
-                        movie.priority = e.target.value; // Update movie priority
+                        updatePriority(movie.id, e.target.value);
                       }}
                       className="bg-gray-800 text-white rounded p-1 text-xs"
                     >
