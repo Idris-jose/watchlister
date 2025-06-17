@@ -152,9 +152,9 @@ const Watchlist = () => {
                       }}
                       className="bg-gray-800 text-white rounded p-1 text-xs"
                     >
-                      <option value="high">High</option>
-                      <option value="medium">Medium</option>
-                      <option value="low">Low</option>
+                      <option value="high" className='text-red-600'>High</option>
+                      <option value="medium" className='text-orange-500'>Medium</option>
+                      <option value="low" className='text-green-500'>Low</option>
                     </select>
                   </div>
                   <button

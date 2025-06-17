@@ -34,9 +34,7 @@ export const WatchlistProvider = ({ children }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [loadingTrailers, setLoadingTrailers] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
-  const [priority, setPriority] = useState(""); // Default priority for trailers
-  const [priorityMap, setPriorityMap] = useState({}); // Store priority per movieId
-
+  
   
   // Constants
   const API_KEY = "56185e1e9a25474a6cf2f5748dfb6ebf";
