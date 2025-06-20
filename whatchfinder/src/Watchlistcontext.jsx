@@ -219,7 +219,7 @@ export const WatchlistProvider = ({ children }) => {
       position: 'top-right',
     });
 
-    setWatched(prev => prev.filter(movie => movie.id !== movieId));
+    setWatched(prev => prev.toSplice()(movieId,1));
   };
 
   const addToWatchlist = (movie, priority = "medium") => {
