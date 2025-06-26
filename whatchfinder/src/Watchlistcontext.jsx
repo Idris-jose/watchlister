@@ -34,6 +34,9 @@ export const WatchlistProvider = ({ children }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [loadingTrailers, setLoadingTrailers] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [achievement,setAchievement] = useState([
+    "congrats!!"
+  ])
   
   
   // Constants
@@ -275,6 +278,17 @@ export const WatchlistProvider = ({ children }) => {
       )
     );
   };
+    // Show achievement toast when number exceeds 5
+    useEffect(() => {
+      if (number > 5) {
+        setAchievement([achievement[0]]);
+        toast.success(`${achievement[0]}`, {
+          duration: 3000,
+          position: 'top-right',
+        });
+      }
+      // eslint-disable-next-line
+    }, [number]);
 
   return (
     <WatchlistContext.Provider value={{
@@ -289,6 +303,7 @@ export const WatchlistProvider = ({ children }) => {
       number,
       clearWatchlist,
       updatePriority,
+      achievement,
       // New search and details functionality
       searchText,
       searchResults,

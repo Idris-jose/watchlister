@@ -4,7 +4,7 @@ import { Star, X, MonitorCheck, Search, Trash2 } from 'lucide-react';
 import imagenotfound from './assets/imagenotfound.png';
 
 const Watchlist = () => {
-  const { watchlist, removeFromWatchlist, addToWatched, isWatched, clearWatchlist, updatePriority } = useWatchlist();
+  const { watchlist, removeFromWatchlist, addToWatched, isWatched, clearWatchlist, updatePriority,achievement } = useWatchlist();
   const img_300 = "https://image.tmdb.org/t/p/w300";
 
   const [searchTerm, setSearchTerm] = useState('');
