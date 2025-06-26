@@ -34,10 +34,12 @@ export const WatchlistProvider = ({ children }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [loadingTrailers, setLoadingTrailers] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
-  const [achievement,setAchievement] = useState([
-    "congrats!!"
-  ])
-  
+  // Achievements state and logic
+  const [achievement, setAchievement] = useState([]);
+ const [currentIndex,setCurrentIndex] = useState(0)
+ 
+
+ 
   
   // Constants
   const API_KEY = "56185e1e9a25474a6cf2f5748dfb6ebf";
@@ -237,6 +239,7 @@ export const WatchlistProvider = ({ children }) => {
       
       setWatchlist(prev => [...prev, enhancedMovie]);
       setNumber(prev => prev + 1);
+      
 
       toast.success(`${movie.title || movie.name} has been added to your watchlist!`, {
         duration: 3000,
@@ -278,11 +281,36 @@ export const WatchlistProvider = ({ children }) => {
       )
     );
   };
-    // Show achievement toast when number exceeds 5
+    
+    const ACHIEVEMENTS = [
+      { count: 5, message: "🎉 Congrats! You added 5 items to your watchlist!" },
+      { count: 10, message: "🏆 Amazing! 10 items in your watchlist!" },
+      { count: 20, message: "🥇 You're a true cinephile! 20+ items added!" },
+      { count: 50, message: "🌟 Unstoppable! 50+ items in your watchlist!" }
+    ];
+
     useEffect(() => {
-      if (number > 5) {
-        setAchievement([achievement[0]]);
-        toast.success(`${achievement[0]}`, {
+      if (number ===  ACHIEVEMENTS[3].count) {
+        setAchievement([ACHIEVEMENTS[3]]);
+        toast.success(`${ACHIEVEMENTS[3].message}`, {
+          duration: 3000,
+          position: 'top-right',
+        });
+      } else if (number === ACHIEVEMENTS[2].count) {
+        setAchievement([ACHIEVEMENTS[2]]);
+        toast.success(`${ACHIEVEMENTS[2].message}`, {
+          duration: 3000,
+          position: 'top-right',
+        });
+      } else if (number === ACHIEVEMENTS[1].count) {
+        setAchievement([ACHIEVEMENTS[1]]);
+        toast.success(`${ACHIEVEMENTS[1].message}`, {
+          duration: 3000,
+          position: 'top-right',
+        });
+      } else if (number === ACHIEVEMENTS[0].count) {
+        setAchievement([ACHIEVEMENTS[0]]);
+        toast.success(`${ACHIEVEMENTS[0].message}`, {
           duration: 3000,
           position: 'top-right',
         });
