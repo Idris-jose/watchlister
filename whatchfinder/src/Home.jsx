@@ -396,7 +396,7 @@ function Home1() {
                 <img
                   src={
                     show.poster_path
-                      ? `${IMAGE_BASE_URL}${show.poster_path}`
+                      ? `${img_300}/${show.poster_path}`
                       : 'https://via.placeholder.com/500x750/374151/9CA3AF?text=No+Image'
                   }
                   alt={show.name}
