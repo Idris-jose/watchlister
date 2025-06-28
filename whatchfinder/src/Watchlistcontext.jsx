@@ -34,10 +34,13 @@ export const WatchlistProvider = ({ children }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [loadingTrailers, setLoadingTrailers] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [series, setSeries] = useState([]);
   // Achievements state and logic
   const [achievement, setAchievement] = useState([]);
  const [currentIndex,setCurrentIndex] = useState(0)
  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
  
   
@@ -55,6 +58,27 @@ export const WatchlistProvider = ({ children }) => {
   }, [watched]);
 
  
+  const fetchPopularSeries = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${BASE_URL}/tv/popular?api_key=${API_KEY}&language=en-US&page=1`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch TV series');
+      }
+      
+      const data = await response.json();
+      setSeries(data.results);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPopularSeries();
+  }, []);
 
   // Fetch additional details for a movie/TV show
   const fetchMovieDetails = async (movieId, mediaType) => {
@@ -340,6 +364,7 @@ export const WatchlistProvider = ({ children }) => {
       isSearching,
       loadingTrailers,
       loadingDetails,
+      series,
       updateSearchText,
       searchContent,
       clearSearch,

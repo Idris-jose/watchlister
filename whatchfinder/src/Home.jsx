@@ -20,6 +20,7 @@ function Home1() {
     
     // Movie details
     movieDetails,
+    series,
     getMovieDetails,
     fetchMovieDetails,
     
@@ -382,6 +383,65 @@ function Home1() {
 
       {/* Results Section */}
       <div className="container mx-auto px-4 flex justify-center">
+
+
+       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          {series.map((show) => (
+            <div
+              key={show.id}
+              className="bg-gray-800 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300 shadow-lg hover:shadow-xl"
+            >
+              {/* Poster Image */}
+              <div className="relative">
+                <img
+                  src={
+                    show.poster_path
+                      ? `${IMAGE_BASE_URL}${show.poster_path}`
+                      : 'https://via.placeholder.com/500x750/374151/9CA3AF?text=No+Image'
+                  }
+                  alt={show.name}
+                  className="w-full h-72 object-cover"
+                />
+                <div className="absolute top-2 right-2 bg-black bg-opacity-70 rounded-full px-2 py-1 flex items-center gap-1">
+                  <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                  <span className="text-sm text-white">{show.vote_average?.toFixed(1)}</span>
+                </div>
+                {/* Popularity Badge */}
+                <div className="absolute top-2 left-2 bg-purple-600 bg-opacity-90 rounded-full px-2 py-1">
+                  <span className="text-xs text-white font-medium">#{series.indexOf(show) + 1}</span>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-4">
+                <h3 className="font-semibold text-lg mb-2 line-clamp-2">
+                  {show.name}
+                </h3>
+                
+                <div className="flex items-center gap-2 text-gray-300 text-sm mb-3">
+                  <Calendar className="w-4 h-4" />
+                  <span>
+                    {show.first_air_date
+                      ? new Date(show.first_air_date).getFullYear()
+                      : 'TBA'}
+                  </span>
+                </div>
+
+                <p className="text-gray-400 text-sm line-clamp-3">
+                  {show.overview || 'No description available.'}
+                </p>
+
+                {/* Additional Info */}
+                <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+                  <span>Popularity: {Math.round(show.popularity)}</span>
+                  <span>Votes: {show.vote_count}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+
         <div className="grid justify-center grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {searchResults && searchResults.length > 0 ? (
             searchResults.map((movie) => {
@@ -453,10 +513,10 @@ function Home1() {
                         <span className="ml-2 text-gray-400">({vote_count} votes)</span>
                       ) : null}
                     </div>
-                    <p className="text-white text-sm flex-1 mb-3 line-clamp-3 overflow-hidden">
+                    <p className="text-white text-sm flex-1  line-clamp-1 overflow-hidden">
                       {overview || "No overview available."}
                     </p>
-                    <div className="flex flex-col gap-2 mt-auto">
+                    <div className="flex flex-col gap-2 mt">
                       <button 
                         onClick={() => handleOpenModal(movie)}
                         className="bg-blue-900 rounded text-white flex items-center justify-center w-full px-4 py-2 font-medium hover:bg-blue-800 transition"
