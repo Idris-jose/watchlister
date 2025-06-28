@@ -320,10 +320,7 @@ function Home1() {
 
             {/* Action Buttons */}
             <div className="flex space-x-3">
-              <button className="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center">
-                <Play className="w-5 h-5 mr-2" />
-                Watch Now
-              </button>
+             
               <button 
                 onClick={() => handleAddToWatchlist(movie)}
                 className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center"
@@ -487,6 +484,11 @@ function Home1() {
           )}
         </div>
       </div>
+      <footer className="mt-8 text-gray-500 text-sm">
+        <p className="text-center"> 
+          made by jose idris
+          </p>
+          </footer>
     </div>
   );
 }
