@@ -61,7 +61,7 @@ export const WatchlistProvider = ({ children }) => {
   const fetchPopularSeries = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`https://api.themoviedb.org/3/tv/trending?api_key=${API_KEY}&language=en-US&page=1`);
+      const response = await fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=en-US&page=1`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch TV series');

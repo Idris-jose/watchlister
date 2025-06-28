@@ -346,10 +346,14 @@ function Home1() {
       />
       
       {/* Header Section */}
-      <div className="flex flex-col items-center justify-center mb-8 relative">
-        <img src={logo} alt="WatchFinder Logo" className="w-70 mb-4" />
-        
-        <div className="flex items-center bg-gray-900 rounded p-2 lg:w-2xl md:w-xl sm:w-lg">
+      <div className="flex flex-col items-center justify-center mb-4 relative">
+        <img src={logo} alt="WatchFinder Logo" className="w-70 " />
+
+         <div className="col-span-full text-center text-white/70 font-medium text-lg mt-3">
+              Search for movies or TV shows to get started
+            </div>
+
+        <div className="flex items-center bg-gray-900 rounded p-2 lg:w-2xl md:w-xl mt-3 sm:w-lg">
           <SearchCheck className="w-5 h-5 text-gray-400 mr-2" />
           <input
             type="text"
@@ -384,8 +388,10 @@ function Home1() {
       {/* Results Section */}
       <div className="container mx-auto px-4 flex justify-center">
 
+      {
+        !searchText &&  (
 
-       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <div className="grid justify-center grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {series.map((show) => (
             <div
               key={show.id}
@@ -440,6 +446,10 @@ function Home1() {
             </div>
           ))}
         </div>
+
+        )
+      }
+       
 
 
         <div className="grid justify-center grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -533,15 +543,11 @@ function Home1() {
                 </div>
               );
             })
-          ) : searchText.trim() ? (
+          ) : searchText.trim() && (
             <div className="col-span-full text-center text-white font-semibold text-xl mt-8">
               No results found for "{searchText}"
             </div>
-          ) : (
-            <div className="col-span-full text-center text-white/70 font-medium text-lg mt-8">
-              Search for movies or TV shows to get started
-            </div>
-          )}
+          ) }
         </div>
       </div>
       <footer className="mt-8 text-gray-500 text-sm">
