@@ -61,6 +61,8 @@ export const WatchlistProvider = ({ children }) => {
   const fetchPopularSeries = async () => {
     try {
       setLoading(true);
+
+      
    const response = await fetch(`https://api.themoviedb.org/3/trending/tv/week?api_key=${API_KEY}`);
       
       if (!response.ok) {
@@ -270,32 +272,33 @@ export const WatchlistProvider = ({ children }) => {
         duration: 3000,
         position: 'top-right',
       });
-    }else if(!watchlist.some((s) => s.id === Show.id)) {
+    } else if (!watchlist.some((s) => s.id === Show.id)) {
       // Include additional details if available
       const enhancedMovie = {
         ...Show,
         ...movieDetails[Show.id],
         priority: priority.toLowerCase()
       };
-  
-      
-      
+
       setWatchlist(prev => [...prev, enhancedMovie]);
       setNumber(prev => prev + 1);
-      
 
       toast.success(`${Show.title || Show.name} has been added to your watchlist!`, {
         duration: 3000,
         position: 'top-right',
       });
-    }
-    
-    else {
-      toast.error(`${movie.title || movie.name} is already in your watchlist!`, {
-        duration: 3000,
-        position: 'top-right',
-      });
-
+    } else {
+      if (watchlist.some((m) => m.id === movie.id)) {
+        toast.error(`${movie.title || movie.name} is already in your watchlist!`, {
+          duration: 3000,
+          position: 'top-right',
+        });
+      } else if (watchlist.some((s) => s.id === Show.id)) {
+        toast.error(`${Show.title || Show.name} is already in your watchlist!`, {
+          duration: 3000,
+          position: 'top-right',
+        });
+      }
     }
   };
 

@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { SearchCheck, Star, Plus, Info, X, Play, Calendar, Clock, Users, Clapperboard, Tv } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -388,173 +387,182 @@ function Home1() {
       {/* Results Section */}
       <div className="container mx-auto px-4 flex justify-center">
 
-      {
-        !searchText &&  (
-        //for popular series
+      {/* Trending Series Section - Now using same styling as search results */}
+      {!searchText && (
         <div className="grid justify-center grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {series.map((show) => (
-            <div
-              key={show.id}
-              className="bg-gray-800 rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300 shadow-lg hover:shadow-xl"
-            >
-              {/* Poster Image */}
-              <div className="relative">
-                <img
-                  src={
-                    show.poster_path
-                      ? `${img_300}/${show.poster_path}`
-                      : 'https://via.placeholder.com/500x750/374151/9CA3AF?text=No+Image'
-                  }
-                  alt={show.name}
-                  className="w-full h-72 object-cover"
-                />
-                <div className="absolute top-2 right-2 bg-black bg-opacity-70 rounded-full px-2 py-1 flex items-center gap-1">
-                  <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                  <span className="text-sm text-white">{show.vote_average?.toFixed(1)}</span>
-                </div>
-                {/* Popularity Badge */}
-                <div className="absolute top-2 left-2 bg-purple-600 bg-opacity-90 rounded-full px-2 py-1">
-                  <span className="text-xs text-white font-medium">#{series.indexOf(show) + 1}</span>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="p-4">
-                <h3 className="font-semibold text-lg mb-2 line-clamp-2">
-                  {show.name}
-                </h3>
-                
-                <div className="flex items-center gap-2 text-gray-300 text-sm mb-3">
-                  <Calendar className="w-4 h-4" />
-                  <span>
-                    {show.first_air_date
-                      ? new Date(show.first_air_date).getFullYear()
-                      : 'TBA'}
+          {series.map((show) => {
+            // Get additional details for this show
+            const details = getMovieDetails(show.id);
+            
+            return (
+              <div
+                className="bg-gray-900 rounded-xl shadow-lg w-full overflow-hidden hover:scale-105 transition-transform duration-200 group mx-auto"
+                style={{ maxWidth: "420px" }}
+                key={show.id}
+              >
+                <div className="relative">
+                  <img
+                    src={
+                      show.poster_path
+                        ? `${img_300}/${show.poster_path}`
+                        : imagenotfound
+                    }
+                    alt={show.name}
+                    className="w-full h-72 object-cover transition-opacity duration-300 group-hover:opacity-80"
+                    loading="lazy"
+                  />
+                  <span className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
+                    TV
                   </span>
-                </div>
-
-                <p className="text-gray-400 text-sm line-clamp-3">
-                  {show.overview || 'No description available.'}
-                </p>
-
-                {/* Additional Info */}
-                <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
-                  <span>Popularity: {Math.round(show.popularity)}</span>
-                  <span>Votes: {show.vote_count}</span>
-                </div>
-                 <button 
-                        onClick={() => handleAddToWatchlist(show)}
-                        className="bg-white border border-blue-900 flex items-center justify-center rounded text-blue-900 w-full px-4 py-2 font-medium hover:bg-blue-50 transition">
-                        <Plus className='mr-1 text-blue-800' /> Add to Watchlist
-                      </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        )
-      }
-       
-
-        
-        <div className="grid justify-center grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          // for search result
-          {searchResults && searchResults.length > 0 ? (
-            searchResults.map((movie) => {
-              const {
-                name,
-                title,
-                poster_path,
-                first_air_date,
-                release_date,
-                media_type,
-                vote_average,
-                vote_count,
-                overview,
-                id,
-              } = movie;
-              
-              // Get additional details for this movie
-              const details = getMovieDetails(id);
-              
-              return (
-                <div
-                  className="bg-gray-900 rounded-xl shadow-lg w-full overflow-hidden hover:scale-105 transition-transform duration-200 group mx-auto"
-                  style={{ maxWidth: "420px" }}
-                  key={id}
-                >
-                  <div className="relative">
-                    <img
-                      src={poster_path ? `${img_300}/${poster_path}` : imagenotfound}
-                      className="w-full h-72 object-cover transition-opacity duration-300 group-hover:opacity-80"
-                      alt={title || name || "Movie poster"}
-                      loading="lazy"
-                    />
-                    <span className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
-                      {media_type === "tv" ? "TV" : "Movie"}
+                  {show.vote_average > 0 && (
+                    <span className="absolute top-2 right-2 flex items-center bg-yellow-400/90 text-black text-xs px-2 py-1 rounded-full font-semibold">
+                      {show.vote_average.toFixed(1)}
+                      <Star className="ml-1 w-4 h-4 text-yellow-700" />
                     </span>
-                    {vote_average > 0 && (
-                      <span className="absolute top-2 right-2 flex items-center bg-yellow-400/90 text-black text-xs px-2 py-1 rounded-full font-semibold">
-                        {vote_average.toFixed(1)}
-                        <Star className="ml-1 w-4 h-4 text-yellow-700" />
-                      </span>
-                    )}
-                    {/* Show runtime/seasons on card */}
-                    {(details.runtime || details.number_of_seasons) && (
-                      <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center">
-                        {media_type === 'movie' && details.runtime ? (
-                          <>
-                            <Clock className="w-3 h-3 mr-1" />
-                            {formatRuntime(details.runtime)}
-                          </>
-                        ) : media_type === 'tv' && details.number_of_seasons ? (
-                          <>
-                            <Tv className="w-3 h-3 mr-1" />
-                            {details.number_of_seasons} Season{details.number_of_seasons !== 1 ? 's' : ''}
-                          </>
-                        ) : null}
-                      </span>
-                    )}
+                  )}
+                  {/* Show seasons on card */}
+                  {details.number_of_seasons && (
+                    <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center">
+                      <Tv className="w-3 h-3 mr-1" />
+                      {details.number_of_seasons} Season{details.number_of_seasons !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="p-4 flex flex-col h-56">
+                  <h5 className="text-lg font-semibold text-white text-center mb-1 truncate">
+                    {show.name}
+                  </h5>
+                  <div className="flex items-center justify-center text-xs text-gray-600 mb-2">
+                    <span>
+                      {show.first_air_date || "Unknown"}
+                    </span>
+                    {show.vote_count ? (
+                      <span className="ml-2 text-gray-400">({show.vote_count} votes)</span>
+                    ) : null}
                   </div>
-                  
-                  <div className="p-4 flex flex-col h-56">
-                    <h5 className="text-lg font-semibold text-white text-center mb-1 truncate">
-                      {title || name}
-                    </h5>
-                    <div className="flex items-center justify-center text-xs text-gray-600 mb-2">
-                      <span>
-                        {first_air_date || release_date || "Unknown"}
-                      </span>
-                      {vote_count ? (
-                        <span className="ml-2 text-gray-400">({vote_count} votes)</span>
-                      ) : null}
-                    </div>
-                    <p className="text-white text-sm flex-1  line-clamp-1 overflow-hidden">
-                      {overview || "No overview available."}
-                    </p>
-                    <div className="flex flex-col gap-2 mt">
-                      <button 
-                        onClick={() => handleOpenModal(movie)}
-                        className="bg-blue-900 rounded text-white flex items-center justify-center w-full px-4 py-2 font-medium hover:bg-blue-800 transition"
-                      >
-                        <Info className='mr-1 w-4 text-white'/> More Info
-                      </button>
-                      <button 
-                        onClick={() => handleAddToWatchlist(movie)}
-                        className="bg-white border border-blue-900 flex items-center justify-center rounded text-blue-900 w-full px-4 py-2 font-medium hover:bg-blue-50 transition">
-                        <Plus className='mr-1 text-blue-800' /> Add to Watchlist
-                      </button>
-                    </div>
+                  <p className="text-white text-sm flex-1 line-clamp-1 overflow-hidden">
+                    {show.overview || "No overview available."}
+                  </p>
+                  <div className="flex flex-col gap-2 mt">
+                    <button 
+                      onClick={() => handleOpenModal({...show, media_type: 'tv'})}
+                      className="bg-blue-900 rounded text-white flex items-center justify-center w-full px-4 py-2 font-medium hover:bg-blue-800 transition"
+                    >
+                      <Info className='mr-1 w-4 text-white'/> More Info
+                    </button>
+                    <button 
+                      onClick={() => handleAddToWatchlist({...show, media_type: 'tv'})}
+                      className="bg-white border border-blue-900 flex items-center justify-center rounded text-blue-900 w-full px-4 py-2 font-medium hover:bg-blue-50 transition"
+                    >
+                      <Plus className='mr-1 text-blue-800' /> Add to Watchlist
+                    </button>
                   </div>
                 </div>
-              );
-            })
-          ) : searchText.trim() && (
-            <div className="col-span-full text-center text-white font-semibold text-xl mt-8">
-              No results found for "{searchText}"
-            </div>
-          ) }
+              </div>
+            );
+          })}
         </div>
+      )}
+
+      {/* Search Results Section */}
+      <div className="grid justify-center grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {searchResults && searchResults.length > 0 ? (
+          searchResults.map((movie) => {
+            const {
+              name,
+              title,
+              poster_path,
+              first_air_date,
+              release_date,
+              media_type,
+              vote_average,
+              vote_count,
+              overview,
+              id,
+            } = movie;
+            
+            // Get additional details for this movie
+            const details = getMovieDetails(id);
+            
+            return (
+              <div
+                className="bg-gray-900 rounded-xl shadow-lg w-full overflow-hidden hover:scale-105 transition-transform duration-200 group mx-auto"
+                style={{ maxWidth: "420px" }}
+                key={id}
+              >
+                <div className="relative">
+                  <img
+                    src={poster_path ? `${img_300}/${poster_path}` : imagenotfound}
+                    className="w-full h-72 object-cover transition-opacity duration-300 group-hover:opacity-80"
+                    alt={title || name || "Movie poster"}
+                    loading="lazy"
+                  />
+                  <span className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
+                    {media_type === "tv" ? "TV" : "Movie"}
+                  </span>
+                  {vote_average > 0 && (
+                    <span className="absolute top-2 right-2 flex items-center bg-yellow-400/90 text-black text-xs px-2 py-1 rounded-full font-semibold">
+                      {vote_average.toFixed(1)}
+                      <Star className="ml-1 w-4 h-4 text-yellow-700" />
+                    </span>
+                  )}
+                  {/* Show runtime/seasons on card */}
+                  {(details.runtime || details.number_of_seasons) && (
+                    <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center">
+                      {media_type === 'movie' && details.runtime ? (
+                        <>
+                          <Clock className="w-3 h-3 mr-1" />
+                          {formatRuntime(details.runtime)}
+                        </>
+                      ) : media_type === 'tv' && details.number_of_seasons ? (
+                        <>
+                          <Tv className="w-3 h-3 mr-1" />
+                          {details.number_of_seasons} Season{details.number_of_seasons !== 1 ? 's' : ''}
+                        </>
+                      ) : null}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="p-4 flex flex-col h-56">
+                  <h5 className="text-lg font-semibold text-white text-center mb-1 truncate">
+                    {title || name}
+                  </h5>
+                  <div className="flex items-center justify-center text-xs text-gray-600 mb-2">
+                    <span>
+                      {first_air_date || release_date || "Unknown"}
+                    </span>
+                    {vote_count ? (
+                      <span className="ml-2 text-gray-400">({vote_count} votes)</span>
+                    ) : null}
+                  </div>
+                  <p className="text-white text-sm flex-1  line-clamp-1 overflow-hidden">
+                    {overview || "No overview available."}
+                  </p>
+                  <div className="flex flex-col gap-2 mt">
+                    <button 
+                      onClick={() => handleOpenModal(movie)}
+                      className="bg-blue-900 rounded text-white flex items-center justify-center w-full px-4 py-2 font-medium hover:bg-blue-800 transition"
+                    >
+                      <Info className='mr-1 w-4 text-white'/> More Info
+                    </button>
+                    <button 
+                      onClick={() => handleAddToWatchlist(movie)}
+                      className="bg-white border border-blue-900 flex items-center justify-center rounded text-blue-900 w-full px-4 py-2 font-medium hover:bg-blue-50 transition">
+                      <Plus className='mr-1 text-blue-800' /> Add to Watchlist
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : searchText.trim() && (
+          <div className="col-span-full text-center text-white font-semibold text-xl mt-8">
+            No results found for "{searchText}"
+          </div>
+        ) }
+      </div>
       </div>
       <footer className="mt-8 text-gray-500 text-sm">
         <p className="text-center"> 
