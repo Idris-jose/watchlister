@@ -413,6 +413,7 @@ function Home1() {
                   />
                   <span className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
                     TV
+
                   </span>
                   {show.vote_average > 0 && (
                     <span className="absolute top-2 right-2 flex items-center bg-yellow-400/90 text-black text-xs px-2 py-1 rounded-full font-semibold">
@@ -446,7 +447,7 @@ function Home1() {
                   </p>
                   <div className="flex flex-col gap-2 mt">
                     <button 
-                      onClick={() => handleOpenModal({...show, media_type: 'tv'})}
+                      onClick={() => handleOpenModal({...show})}
                       className="bg-blue-900 rounded text-white flex items-center justify-center w-full px-4 py-2 font-medium hover:bg-blue-800 transition"
                     >
                       <Info className='mr-1 w-4 text-white'/> More Info

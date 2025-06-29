@@ -63,7 +63,7 @@ export const WatchlistProvider = ({ children }) => {
       setLoading(true);
 
       
-   const response = await fetch(`https://api.themoviedb.org/3/trending/tv/week?api_key=${API_KEY}`);
+   const response = await fetch(`https://api.themoviedb.org/3/trending/all/week?api_key=${API_KEY}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch TV series');
