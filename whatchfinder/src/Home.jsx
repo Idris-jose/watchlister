@@ -353,7 +353,7 @@ function Home1() {
               Search for movies or TV shows to get started
             </div>
 
-        <div className="flex items-center bg-gray-900 rounded p-2 lg:w-2xl md:w-xl mt-3 sm:w-lg">
+        <div className="flex items-center bg-gray-900 rounded p-2 lg:w-2xl md:w-xl mt-3 mb-3 sm:w-lg">
           <SearchCheck className="w-5 h-5 text-gray-400 mr-2" />
           <input
             type="text"
@@ -390,7 +390,7 @@ function Home1() {
 
       {
         !searchText &&  (
-
+        //for popular series
         <div className="grid justify-center grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {series.map((show) => (
             <div
@@ -451,8 +451,9 @@ function Home1() {
       }
        
 
-
+        
         <div className="grid justify-center grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          // for search result
           {searchResults && searchResults.length > 0 ? (
             searchResults.map((movie) => {
               const {

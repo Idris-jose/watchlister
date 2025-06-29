@@ -61,7 +61,7 @@ export const WatchlistProvider = ({ children }) => {
   const fetchPopularSeries = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=en-US&page=1`);
+   const response = await fetch(`https://api.themoviedb.org/3/trending/tv/week?api_key=${API_KEY}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch TV series');
@@ -251,7 +251,7 @@ export const WatchlistProvider = ({ children }) => {
     setWatched(prev => prev.toSplice()(movieId,1));
   };
 
-  const addToWatchlist = (movie, priority = "medium") => {
+  const addToWatchlist = (movie, Show, priority = "medium") => {
     if (!watchlist.some((m) => m.id === movie.id)) {
       // Include additional details if available
       const enhancedMovie = {
@@ -259,6 +259,7 @@ export const WatchlistProvider = ({ children }) => {
         ...movieDetails[movie.id],
         priority: priority.toLowerCase()
       };
+  
       
       
       setWatchlist(prev => [...prev, enhancedMovie]);
