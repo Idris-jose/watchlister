@@ -412,7 +412,7 @@ function Home1() {
                     loading="lazy"
                   />
                   <span className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
-                    TV
+                    {show.media_type}
 
                   </span>
                   {show.vote_average > 0 && (
@@ -432,11 +432,11 @@ function Home1() {
                 
                 <div className="p-4 flex flex-col h-56">
                   <h5 className="text-lg font-semibold text-white text-center mb-1 truncate">
-                    {show.name}
+                    {show.name || show.title}
                   </h5>
                   <div className="flex items-center justify-center text-xs text-gray-600 mb-2">
                     <span>
-                      {show.first_air_date || "Unknown"}
+                      {show.first_air_date || show.release_date || "Unknown"}
                     </span>
                     {show.vote_count ? (
                       <span className="ml-2 text-gray-400">({show.vote_count} votes)</span>
@@ -453,7 +453,7 @@ function Home1() {
                       <Info className='mr-1 w-4 text-white'/> More Info
                     </button>
                     <button 
-                      onClick={() => handleAddToWatchlist({...show, media_type: 'tv'})}
+                      onClick={() => handleAddToWatchlist({...show})}
                       className="bg-white border border-blue-900 flex items-center justify-center rounded text-blue-900 w-full px-4 py-2 font-medium hover:bg-blue-50 transition"
                     >
                       <Plus className='mr-1 text-blue-800' /> Add to Watchlist
