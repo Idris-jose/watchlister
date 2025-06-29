@@ -270,11 +270,32 @@ export const WatchlistProvider = ({ children }) => {
         duration: 3000,
         position: 'top-right',
       });
-    } else {
+    }else if(!watchlist.some((s) => s.id === Show.id)) {
+      // Include additional details if available
+      const enhancedMovie = {
+        ...Show,
+        ...movieDetails[Show.id],
+        priority: priority.toLowerCase()
+      };
+  
+      
+      
+      setWatchlist(prev => [...prev, enhancedMovie]);
+      setNumber(prev => prev + 1);
+      
+
+      toast.success(`${Show.title || Show.name} has been added to your watchlist!`, {
+        duration: 3000,
+        position: 'top-right',
+      });
+    }
+    
+    else {
       toast.error(`${movie.title || movie.name} is already in your watchlist!`, {
         duration: 3000,
         position: 'top-right',
       });
+
     }
   };
 

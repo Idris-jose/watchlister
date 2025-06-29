@@ -442,6 +442,11 @@ function Home1() {
                   <span>Popularity: {Math.round(show.popularity)}</span>
                   <span>Votes: {show.vote_count}</span>
                 </div>
+                 <button 
+                        onClick={() => handleAddToWatchlist(show)}
+                        className="bg-white border border-blue-900 flex items-center justify-center rounded text-blue-900 w-full px-4 py-2 font-medium hover:bg-blue-50 transition">
+                        <Plus className='mr-1 text-blue-800' /> Add to Watchlist
+                      </button>
               </div>
             </div>
           ))}
