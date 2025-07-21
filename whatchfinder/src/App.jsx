@@ -1,20 +1,58 @@
 import './App.css'
 import Home1 from './Home.jsx';
+import ForgotPassword from './Auth/ForgotPassword.jsx';
+import SignUp from './Auth/Signup.jsx';
+import  Login from './Auth/Login.jsx';
+
+import ProtectedRoute from './Routes/ProtectedRoute.jsx';
+import PublicRoute from './Routes/PublicRoute.jsx';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { WatchlistProvider } from './Watchlistcontext.jsx';
+import { AuthProvider } from './Auth/AuthContext.jsx';
 import  Watchlist from './Watchlist.jsx'
 export default function App() {
   return (
-    <WatchlistProvider>
-    <Router>
-         <Routes>
-          <Route path="/" element={<Home1 />} />
-          <Route path="/Watchlist" element={<Watchlist />} />
-          {/* Add more routes as needed */}
-         </Routes>
-       
-    </Router>
-    </WatchlistProvider>
+  
     
+    <Router>
+      <AuthProvider>
+<WatchlistProvider>
+     
+         <Routes>
+          <Route path="/" element={
+            <PublicRoute>
+          <SignUp />
+            </PublicRoute>
+            
+            } />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/login" element={
+            <PublicRoute>
+             <Login />
+            </PublicRoute>
+           
+            
+            } />
+          <Route path="/home" element={
+            <ProtectedRoute>
+             <Home1 />
+            </ProtectedRoute>
+            
+            
+            } />
+          <Route path="/Watchlist" element={
+            <ProtectedRoute>
+            <Watchlist />
+            </ProtectedRoute>
+           
+            
+            } />
+    
+         </Routes>
+         </WatchlistProvider>
+          </AuthProvider>
+    </Router>
+    
+   
   );
 }

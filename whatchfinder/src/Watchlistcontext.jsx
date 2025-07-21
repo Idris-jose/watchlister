@@ -1,5 +1,16 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
+import { useAuth } from './Auth/AuthContext';
+import {
+  initializeUser,
+  addToWatchlistDB,
+  removeFromWatchlistDB,
+  clearWatchlistDB,
+  updateMoviePriorityDB,
+  addToWatchedDB,
+  removeFromWatchedDB,
+  subscribeToUserData
+} from './firestoreservices';
 
 const WatchlistContext = createContext();
 
@@ -11,22 +22,17 @@ export const useWatchlist = () => {
   return context;
 };
 
-const WATCHLIST_STORAGE_KEY = 'watchlist';
-const WATCHED_STORAGE_KEY = 'watched';
-
 export const WatchlistProvider = ({ children }) => {
-  // Existing watchlist state
-  const [watchlist, setWatchlist] = useState(() => {
-    const stored = localStorage.getItem(WATCHLIST_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  });
-  const [watched, setWatched] = useState(() => {
-    const stored = localStorage.getItem(WATCHED_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  });
-  const [number, setNumber] = useState(watchlist.length);
+ const { user } = useAuth();
 
-  // New search and details state
+  
+  // Watchlist state
+  const [watchlist, setWatchlist] = useState([]);
+  const [watched, setWatched] = useState([]);
+  const [number, setNumber] = useState(0);
+  const [userDataLoading, setUserDataLoading] = useState(false);
+
+  // Search and details state
   const [searchText, setSearchText] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [movieDetails, setMovieDetails] = useState({});
@@ -35,35 +41,68 @@ export const WatchlistProvider = ({ children }) => {
   const [loadingTrailers, setLoadingTrailers] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [series, setSeries] = useState([]);
-  // Achievements state and logic
   const [achievement, setAchievement] = useState([]);
- const [currentIndex,setCurrentIndex] = useState(0)
- 
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
- 
-  
   // Constants
   const API_KEY = "56185e1e9a25474a6cf2f5748dfb6ebf";
   const img_300 = "https://image.tmdb.org/t/p/w300";
 
+  // Initialize user and subscribe to data changes
   useEffect(() => {
-    localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(watchlist));
-    setNumber(watchlist.length);
-  }, [watchlist]);
+    if (!user) {
+      // Reset all data when no user is authenticated
+      setWatchlist([]);
+      setWatched([]);
+      setNumber(0);
+      setUserDataLoading(false);
+      return;
+    }
 
-  useEffect(() => {
-    localStorage.setItem(WATCHED_STORAGE_KEY, JSON.stringify(watched));
-  }, [watched]);
+    const initAndSubscribe = async () => {
+      setUserDataLoading(true);
+      
+      try {
+       await initializeUser(user.uid, user.email);
+        // Subscribe to real-time updates
+        const unsubscribe = subscribeToUserData(user.uid, (userData) => {
+          setWatchlist(userData.watchlist || []);
+          setWatched(userData.watched || []);
+          setNumber((userData.watchlist || []).length);
+          setUserDataLoading(false);
+        });
 
- 
+        return unsubscribe;
+      } catch (error) {
+        console.error('Error initializing user data:', error);
+        setUserDataLoading(false);
+        toast.error('Failed to sync with server. Please check your connection.');
+        
+        // Don't fallback to localStorage - keep empty state
+        setWatchlist([]);
+        setWatched([]);
+        setNumber(0);
+      }
+    };
+
+    const unsubscribePromise = initAndSubscribe();
+    
+    return () => {
+      unsubscribePromise.then(unsubscribe => {
+        if (typeof unsubscribe === 'function') {
+          unsubscribe();
+        }
+      });
+    };
+  }, [user]);
+
+  // Fetch popular series (unchanged)
   const fetchPopularSeries = async () => {
     try {
       setLoading(true);
-
-      
-   const response = await fetch(`https://api.themoviedb.org/3/trending/all/week?api_key=${API_KEY}`);
+      const response = await fetch(`https://api.themoviedb.org/3/trending/all/week?api_key=${API_KEY}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch TV series');
@@ -82,7 +121,7 @@ export const WatchlistProvider = ({ children }) => {
     fetchPopularSeries();
   }, []);
 
-  // Fetch additional details for a movie/TV show
+  // Movie details and trailers (unchanged functions)
   const fetchMovieDetails = async (movieId, mediaType) => {
     try {
       const endpoint = mediaType === 'tv' ? 'tv' : 'movie';
@@ -91,7 +130,6 @@ export const WatchlistProvider = ({ children }) => {
       );
       const details = await response.json();
       
-      // Store details in our state object using the movie ID as key
       setMovieDetails(prev => ({
         ...prev,
         [movieId]: {
@@ -109,7 +147,6 @@ export const WatchlistProvider = ({ children }) => {
     }
   };
 
-  // Fetch trailers for a movie/TV show
   const fetchTrailers = async (movieId, mediaType) => {
     setLoadingTrailers(true);
     try {
@@ -119,7 +156,6 @@ export const WatchlistProvider = ({ children }) => {
       );
       const { results } = await data.json();
       
-      // Filter for YouTube trailers only and sort by type preference
       const youtubeTrailers = results?.filter(
         video => video.site === 'YouTube' && 
         (video.type === 'Trailer' || video.type === 'Teaser' || video.type === 'Clip')
@@ -139,7 +175,7 @@ export const WatchlistProvider = ({ children }) => {
     }
   };
 
-  // Search for movies and TV shows
+  // Search functions (unchanged)
   const searchContent = async (query, page = 1) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -155,7 +191,6 @@ export const WatchlistProvider = ({ children }) => {
       const { results } = await data.json();
       setSearchResults(results || []);
       
-      // Fetch additional details for each result
       if (results && results.length > 0) {
         results.forEach(movie => {
           if (movie.id && movie.media_type) {
@@ -171,7 +206,6 @@ export const WatchlistProvider = ({ children }) => {
     }
   };
 
-  // Update search text and trigger search
   const updateSearchText = (text) => {
     setSearchText(text);
     if (text.trim()) {
@@ -182,24 +216,111 @@ export const WatchlistProvider = ({ children }) => {
     }
   };
 
-  // Clear search results
   const clearSearch = () => {
     setSearchText("");
     setSearchResults([]);
     setMovieDetails({});
   };
 
-  // Get details for a specific movie
   const getMovieDetails = (movieId) => {
     return movieDetails[movieId] || {};
   };
 
-  // Existing watchlist functions
+  // Helper function to check if user is authenticated
+  const requireAuth = (action) => {
+    if (!user) {
+      toast.error('Please sign in to use this feature', {
+        duration: 3000,
+        position: 'top-right',
+      });
+      return false;
+    }
+    return true;
+  };
+
+  // Watchlist functions with Firestore only
+  const addToWatchlist = async (movie, Show, priority = "medium") => {
+    if (!requireAuth('add to watchlist')) return;
+    
+    const movieToAdd = movie || Show;
+    
+    if (watchlist.some((m) => m.id === movieToAdd.id)) {
+      toast.error(`${movieToAdd.title || movieToAdd.name} is already in your watchlist!`, {
+        duration: 3000,
+        position: 'top-right',
+      });
+      return;
+    }
+
+    const enhancedMovie = {
+      ...movieToAdd,
+      ...movieDetails[movieToAdd.id],
+      priority: priority.toLowerCase()
+    };
+
+    try {
+      await addToWatchlistDB(user.uid, enhancedMovie);
+      toast.success(`${movieToAdd.title || movieToAdd.name} has been added to your watchlist!`, {
+        duration: 3000,
+        position: 'top-right',
+      });
+    } catch (error) {
+      console.error('Error adding to watchlist:', error);
+      toast.error('Failed to add to watchlist. Please try again.');
+    }
+  };
+
+  const removeFromWatchlist = async (movieId) => {
+    if (!requireAuth('remove from watchlist')) return;
+    
+    const movieToRemove = watchlist.find(movie => movie.id === movieId);
+
+    try {
+      await removeFromWatchlistDB(user.uid, movieId);
+      toast.error(`${movieToRemove?.title || movieToRemove?.name || 'Movie'} has been removed from your watchlist!`, {
+        duration: 3000,
+        position: 'top-right',
+      });
+    } catch (error) {
+      console.error('Error removing from watchlist:', error);
+      toast.error('Failed to remove from watchlist. Please try again.');
+    }
+  };
+
+  const clearWatchlist = async () => {
+    if (!requireAuth('clear watchlist')) return;
+
+    try {
+      await clearWatchlistDB(user.uid);
+      toast.error('Watchlist has been cleared!', {
+        duration: 3000,
+        position: 'top-right',
+      });
+    } catch (error) {
+      console.error('Error clearing watchlist:', error);
+      toast.error('Failed to clear watchlist. Please try again.');
+    }
+  };
+
+  const updatePriority = async (movieId, newPriority) => {
+    if (!requireAuth('update priority')) return;
+
+    try {
+     await updateMoviePriorityDB(user.uid, movieId, newPriority);
+    } catch (error) {
+      console.error('Error updating priority:', error);
+      toast.error('Failed to update priority. Please try again.');
+    }
+  };
+
+  // Watched functions with Firestore only
   const isWatched = (movieId) => {
     return watched.some(movie => movie.id === movieId);
   };
 
-  const addToWatched = (movieOrId) => {
+  const addToWatched = async (movieOrId) => {
+    if (!requireAuth('update watched status')) return;
+    
     let movieToAdd;
     let movieId;
 
@@ -219,169 +340,65 @@ export const WatchlistProvider = ({ children }) => {
       return;
     }
 
-  if (!watched.some((m) => m.id === movieId)) {
-    setWatched(prev => [...prev, movieToAdd]);
-    
-
-    toast.success(`${movieToAdd.title || movieToAdd.name} has been added to your watched!`, {
-      duration: 3000,
-      position: 'top-right',
-    });
-  } else if (watched.some((m) => m.id === movieId)) {
-    // If already watched, remove from watched and notify
-    setWatched(prev => prev.filter(movie => movie.id !== movieId));
-    toast.error(`${movieToAdd.title || movieToAdd.name} has been removed from your watched!`, {
-      duration: 3000,
-      position: 'top-right',
-    });
-  } else {
-    toast.error(`${movieToAdd.title || movieToAdd.name} has already been added to your watched!`, {
-      duration: 3000,
-      position: 'top-right',
-    });
-  }
-  };
-
-  const removeFromWatched = (movieId) => {
-    const movieToRemove = watched.find(movie => movie.id === movieId);
-
-    toast.error(`${movieToRemove?.title || movieToRemove?.name || 'Movie'} has been removed from your watched list!`, {
-      duration: 3000,
-      position: 'top-right',
-    });
-
-    setWatched(prev => prev.toSplice()(movieId,1));
-  };
-
-  const addToWatchlist = (movie, Show, priority = "medium") => {
-    if (!watchlist.some((m) => m.id === movie.id)) {
-      // Include additional details if available
-      const enhancedMovie = {
-        ...movie,
-        ...movieDetails[movie.id],
-        priority: priority.toLowerCase()
-      };
-  
-      
-      
-      setWatchlist(prev => [...prev, enhancedMovie]);
-      setNumber(prev => prev + 1);
-      
-
-      toast.success(`${movie.title || movie.name} has been added to your watchlist!`, {
-        duration: 3000,
-        position: 'top-right',
-      });
-    } else if (!watchlist.some((s) => s.id === Show.id)) {
-      // Include additional details if available
-      const enhancedMovie = {
-        ...Show,
-        ...movieDetails[Show.id],
-        priority: priority.toLowerCase()
-      };
-
-      setWatchlist(prev => [...prev, enhancedMovie]);
-      setNumber(prev => prev + 1);
-
-      toast.success(`${Show.title || Show.name} has been added to your watchlist!`, {
-        duration: 3000,
-        position: 'top-right',
-      });
-    } else {
-      if (watchlist.some((m) => m.id === movie.id)) {
-        toast.error(`${movie.title || movie.name} is already in your watchlist!`, {
+    try {
+      if (!watched.some((m) => m.id === movieId)) {
+        await addToWatchedDB(user.uid, movieToAdd);
+        toast.success(`${movieToAdd.title || movieToAdd.name} has been added to your watched!`, {
           duration: 3000,
           position: 'top-right',
         });
-      } else if (watchlist.some((s) => s.id === Show.id)) {
-        toast.error(`${Show.title || Show.name} is already in your watchlist!`, {
+      } else {
+       await removeFromWatchedDB(user.uid, movieId);
+        toast.error(`${movieToAdd.title || movieToAdd.name} has been removed from your watched!`, {
           duration: 3000,
           position: 'top-right',
         });
       }
+    } catch (error) {
+      console.error('Error updating watched status:', error);
+      toast.error('Failed to update watched status. Please try again.');
     }
   };
 
-  const removeFromWatchlist = (movieId) => {
-    const movieToRemove = watchlist.find(movie => movie.id === movieId);
+  // Achievement system (unchanged)
+  const ACHIEVEMENTS = [
+    { count: 5, message: "🎉 Congrats! You added 5 items to your watchlist!" },
+    { count: 10, message: "🏆 Amazing! 10 items in your watchlist!" },
+    { count: 20, message: "🥇 You're a true cinephile! 20+ items added!" },
+    { count: 50, message: "🌟 Unstoppable! 50+ items in your watchlist!" }
+  ];
 
-    toast.error(`${movieToRemove?.title || movieToRemove?.name || 'Movie'} has been removed from your watchlist!`, {
-      duration: 3000,
-      position: 'top-right',
-    });
-
-    setWatchlist(prev => prev.filter(movie => movie.id !== movieId));
-    setNumber(prev => Math.max(0, prev - 1));
-  };
-
-  const clearWatchlist = () => {
-    setWatchlist([]);
-    setNumber(0);
-    toast.error('Watchlist has been cleared!', {
-      duration: 3000,
-      position: 'top-right',
-    });
-  };
-
-  const updatePriority = (movieId, newPriority) => {
-    setWatchlist(prevWatchlist =>
-      prevWatchlist.map(movie =>
-        movie.id === movieId ? { ...movie, priority: newPriority.toLowerCase() } : movie
-      )
-    );
-  };
-    
-    const ACHIEVEMENTS = [
-      { count: 5, message: "🎉 Congrats! You added 5 items to your watchlist!" },
-      { count: 10, message: "🏆 Amazing! 10 items in your watchlist!" },
-      { count: 20, message: "🥇 You're a true cinephile! 20+ items added!" },
-      { count: 50, message: "🌟 Unstoppable! 50+ items in your watchlist!" }
-    ];
-
-    useEffect(() => {
-      if (number ===  ACHIEVEMENTS[3].count) {
-        setAchievement([ACHIEVEMENTS[3]]);
-        toast.success(`${ACHIEVEMENTS[3].message}`, {
-          duration: 3000,
-          position: 'top-right',
-        });
-      } else if (number === ACHIEVEMENTS[2].count) {
-        setAchievement([ACHIEVEMENTS[2]]);
-        toast.success(`${ACHIEVEMENTS[2].message}`, {
-          duration: 3000,
-          position: 'top-right',
-        });
-      } else if (number === ACHIEVEMENTS[1].count) {
-        setAchievement([ACHIEVEMENTS[1]]);
-        toast.success(`${ACHIEVEMENTS[1].message}`, {
-          duration: 3000,
-          position: 'top-right',
-        });
-      } else if (number === ACHIEVEMENTS[0].count) {
-        setAchievement([ACHIEVEMENTS[0]]);
-        toast.success(`${ACHIEVEMENTS[0].message}`, {
+  useEffect(() => {
+    ACHIEVEMENTS.forEach(achievement => {
+      if (number === achievement.count) {
+        setAchievement([achievement]);
+        toast.success(`${achievement.message}`, {
           duration: 3000,
           position: 'top-right',
         });
       }
-      // eslint-disable-next-line
-    }, [number]);
+    });
+  }, [number]);
 
   return (
     <WatchlistContext.Provider value={{
+      // User state
+      user,
+      userDataLoading,
+      
       // Existing watchlist functionality
       watchlist,
       watched,
       addToWatchlist,
       addToWatched,
       removeFromWatchlist,
-      removeFromWatched,
       isWatched,
       number,
       clearWatchlist,
       updatePriority,
       achievement,
-      // New search and details functionality
+      
+      // Search and details functionality
       searchText,
       searchResults,
       movieDetails,
