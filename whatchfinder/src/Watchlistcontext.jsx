@@ -9,7 +9,12 @@ import {
   updateMoviePriorityDB,
   addToWatchedDB,
   removeFromWatchedDB,
-  subscribeToUserData
+  subscribeToUserData,
+  enableWatchlistSharing,
+  disableWatchlistSharing,
+  getSharedWatchlist,
+  copySharedWatchlist,
+  updateShareSettings
 } from './firestoreservices';
 
 const WatchlistContext = createContext();
@@ -45,6 +50,15 @@ export const WatchlistProvider = ({ children }) => {
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [shareSettings, setShareSettings] = useState({
+  isPublic: false,
+  shareId: null,
+  shareTitle: "My Watchlist",
+  allowCopying: true,
+  viewCount: 0,
+  copyCount: 0
+});
 
   // Constants
   const API_KEY = "56185e1e9a25474a6cf2f5748dfb6ebf";
@@ -360,6 +374,89 @@ export const WatchlistProvider = ({ children }) => {
     }
   };
 
+  const enableSharing = async (shareTitle, allowCopying = true) => {
+  if (!user) {
+    toast.error('Please sign in to share your watchlist');
+    return;
+  }
+  
+  try {
+    const shareId = await enableWatchlistSharing(user.uid, shareTitle);
+    const newSettings = {
+      isPublic: true,
+      shareId: shareId,
+      shareTitle: shareTitle,
+      allowCopying: allowCopying,
+      viewCount: 0,
+      copyCount: 0
+    };
+    
+    setShareSettings(newSettings);
+    
+    const shareUrl = `${window.location.origin}/shared/${shareId}`;
+    toast.success('Watchlist is now shareable!');
+    return { shareUrl, shareId };
+  } catch (error) {
+    toast.error('Failed to enable sharing');
+    throw error;
+  }
+};
+
+const disableSharing = async () => {
+  if (!user) return;
+  
+  try {
+    await disableWatchlistSharing(user.uid);
+    setShareSettings(prev => ({
+      ...prev,
+      isPublic: false
+    }));
+    toast.success('Sharing disabled');
+  } catch (error) {
+    toast.error('Failed to disable sharing');
+  }
+};
+
+const updateSharingSettings = async (newSettings) => {
+  if (!user) return;
+  
+  try {
+    await updateShareSettings(user.uid, newSettings);
+    setShareSettings(prev => ({ ...prev, ...newSettings }));
+    toast.success('Sharing settings updated');
+  } catch (error) {
+    toast.error('Failed to update settings');
+  }
+};
+
+const copyWatchlistFromShare = async (shareId) => {
+  if (!user) {
+    toast.error('Please sign in to copy watchlists');
+    return;
+  }
+  
+  try {
+    const copiedCount = await copySharedWatchlist(user.uid, shareId);
+    if (copiedCount > 0) {
+      toast.success(`Added ${copiedCount} new movies to your watchlist!`);
+    } else {
+      toast('All movies from this watchlist are already in your list');
+    }
+    return copiedCount;
+  } catch (error) {
+    toast.error(error.message);
+    throw error;
+  }
+};
+
+const getSharedWatchlistData = async (shareId) => {
+  try {
+    return await getSharedWatchlist(shareId);
+  } catch (error) {
+    throw error;
+  }
+};
+
   // Achievement system (unchanged)
   const ACHIEVEMENTS = [
     { count: 5, message: "🎉 Congrats! You added 5 items to your watchlist!" },
@@ -417,6 +514,14 @@ export const WatchlistProvider = ({ children }) => {
       // Constants
       API_KEY,
       img_300,
+
+       // Sharing functionality
+    shareSettings,
+    enableSharing,
+    disableSharing,
+    updateSharingSettings,
+    copyWatchlistFromShare,
+    getSharedWatchlistData,
     }}>
       {children}
       <Toaster />

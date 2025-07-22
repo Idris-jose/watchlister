@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react';
 import { useWatchlist } from './Watchlistcontext.jsx';
-import { Star, X, MonitorCheck, Search, Trash2 } from 'lucide-react';
+import { Star, X, MonitorCheck, Search, Trash2, Share2  } from 'lucide-react';
 import imagenotfound from './assets/imagenotfound.png';
+import ShareModal from './sharemodal.jsx';
 
 const Watchlist = () => {
   const { watchlist, removeFromWatchlist, addToWatched, isWatched, clearWatchlist, updatePriority,achievement } = useWatchlist();
   const img_300 = "https://image.tmdb.org/t/p/w300";
 
+   const [showShareModal, setShowShareModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState('dateAdded'); // 'dateAdded' or 'title'
 
@@ -117,8 +119,21 @@ const Watchlist = () => {
               <Trash2 className="w-5 h-5" />
               Clear All
             </button>
+
+               <button
+        onClick={() => setShowShareModal(true)}
+        className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+      >
+        <Share2 className="w-4 h-4" />
+        Share Watchlist
+      </button>
           </div>
         </div>
+
+           <ShareModal 
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+      />
 
         {sortedWatchlist.length === 0 ? (
           <div className="text-center text-gray-400 mt-12">

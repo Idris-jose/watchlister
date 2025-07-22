@@ -3,6 +3,7 @@ import Home1 from './Home.jsx';
 import ForgotPassword from './Auth/ForgotPassword.jsx';
 import SignUp from './Auth/Signup.jsx';
 import  Login from './Auth/Login.jsx';
+import SharedWatchlist from './SharedWatchlist.jsx';
 
 import ProtectedRoute from './Routes/ProtectedRoute.jsx';
 import PublicRoute from './Routes/PublicRoute.jsx';
@@ -47,6 +48,8 @@ export default function App() {
            
             
             } />
+
+            <Route path="/shared/:shareId" element={<SharedWatchlist />} />
     
          </Routes>
          </WatchlistProvider>
