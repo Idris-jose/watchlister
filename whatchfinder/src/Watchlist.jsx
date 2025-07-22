@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useWatchlist } from './Watchlistcontext.jsx';
 import { Star, X, MonitorCheck, Search, Trash2, Share2  } from 'lucide-react';
 import imagenotfound from './assets/imagenotfound.png';
-import ShareModal from './sharemodal.jsx';
+import ShareModal from './ShareModal.jsx';
 
 const Watchlist = () => {
   const { watchlist, removeFromWatchlist, addToWatched, isWatched, clearWatchlist, updatePriority,achievement } = useWatchlist();
