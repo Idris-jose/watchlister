@@ -5,6 +5,8 @@ import SignUp from './Auth/Signup.jsx';
 import  Login from './Auth/Login.jsx';
 import SharedWatchlist from './SharedWatchlist.jsx';
 
+import LandingPage from './Landingpage/landingpage.jsx';
+
 import ProtectedRoute from './Routes/ProtectedRoute.jsx';
 import PublicRoute from './Routes/PublicRoute.jsx';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
@@ -20,7 +22,8 @@ export default function App() {
 <WatchlistProvider>
      
          <Routes>
-          <Route path="/" element={
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/Signup" element={
             <PublicRoute>
           <SignUp />
             </PublicRoute>
