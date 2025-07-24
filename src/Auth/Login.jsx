@@ -1,5 +1,6 @@
 @@ .. @@
    return (
+   )
 -    <div className="min-h-screen flex flex-col sm:flex-row">
 +    <div className="min-h-screen flex flex-col sm:flex-row pb-safe">
        {/* Background Section */}

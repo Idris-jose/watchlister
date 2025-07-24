@@ -1,5 +1,6 @@
 @@ .. @@
    return (
+   )
 -    <div className="min-h-screen py-8 bg-black flex flex-col items-center">
 +    <div className="min-h-screen py-8 pb-20 md:pb-8 bg-black flex flex-col items-center">
        {/* Movie Modal */}
@@ -24,6 +25,8 @@
            <div className="absolute top-5 right-5 flex items-center">
              <Clapperboard className='text-white w-8 h-8' />
              {number > 0 && (
+)
+}
 @@ .. @@
            </div>
          </Link>

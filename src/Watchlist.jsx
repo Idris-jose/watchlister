@@ -1,5 +1,6 @@
 @@ .. @@
    return (
+   )
 -    <div className="min-h-screen bg-black p-8">
 +    <div className="min-h-screen bg-black p-4 md:p-8 pb-20 md:pb-8">
        <div className="max-w-6xl mx-auto">
