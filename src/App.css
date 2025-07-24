@@ -1,0 +1,19 @@
+@@ .. @@
+ @theme {
+   --font-display: "Archivo", "sans-serif";
+   --font-body: "Inter", "sans-serif";
+-
+-
++}
++
++/* Safe area padding for mobile devices with notches */
++.pb-safe {
++  padding-bottom: env(safe-area-inset-bottom);
++}
++
++/* Ensure content doesn't get hidden behind bottom navigation */
++@media (max-width: 768px) {
++  .main-content {
++    padding-bottom: 80px;
++  }
+ }
