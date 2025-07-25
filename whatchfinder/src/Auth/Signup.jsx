@@ -37,7 +37,7 @@ export default function SignUp() {
       <div className="sm:w-1/2 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-6 sm:p-12">
         <form onSubmit={handleSubmit} className="w-full max-w-md space-y-6" aria-label="Sign up form">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
-            Create your watchlister account
+            Create your account
           </h2>
 
           {error && (
