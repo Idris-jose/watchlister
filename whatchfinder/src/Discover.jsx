@@ -1,21 +1,13 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Star, Heart, X, RotateCcw } from 'lucide-react';
 
 export default function Discover() {
     const [discoveryData, setDiscoveryData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isAnimating, setIsAnimating] = useState(false);
-    const [swipeDirection, setSwipeDirection] = useState(null);
     const [likedItems, setLikedItems] = useState([]);
     const [passedItems, setPassedItems] = useState([]);
-    
-    const cardRef = useRef(null);
-    const startX = useRef(0);
-    const startY = useRef(0);
-    const currentX = useRef(0);
-    const currentY = useRef(0);
-    const isDragging = useRef(false);
+    const [isAnimating, setIsAnimating] = useState(false);
     
     const API_KEY = "56185e1e9a25474a6cf2f5748dfb6ebf";
     const randomPage = Math.floor(Math.random() * 300) + 1;
@@ -58,171 +50,38 @@ export default function Discover() {
         fetchDiscoveryData();
     }, []);
 
-    // Touch/Mouse event handlers
-    const handleStart = (clientX, clientY) => {
-        if (isAnimating) return;
-        
-        startX.current = clientX;
-        startY.current = clientY;
-        currentX.current = clientX;
-        currentY.current = clientY;
-        isDragging.current = true;
-        
-        if (cardRef.current) {
-            cardRef.current.style.transition = 'none';
-        }
-    };
-
-    const handleMove = (clientX, clientY) => {
-        if (!isDragging.current || isAnimating) return;
-        
-        const deltaX = clientX - startX.current;
-        const deltaY = clientY - startY.current;
-        const rotation = deltaX * 0.1;
-        
-        currentX.current = clientX;
-        currentY.current = clientY;
-        
-        if (cardRef.current) {
-            cardRef.current.style.transform = `translateX(${deltaX}px) translateY(${deltaY}px) rotate(${rotation}deg)`;
-            
-            // Add visual feedback
-            const opacity = Math.max(0, 1 - Math.abs(deltaX) / 200);
-            if (deltaX > 50) {
-                cardRef.current.style.boxShadow = `0 0 20px rgba(34, 197, 94, ${1 - opacity})`;
-            } else if (deltaX < -50) {
-                cardRef.current.style.boxShadow = `0 0 20px rgba(239, 68, 68, ${1 - opacity})`;
-            } else {
-                cardRef.current.style.boxShadow = 'none';
-            }
-        }
-    };
-
-    const handleEnd = () => {
-        if (!isDragging.current || isAnimating) return;
-        
-        isDragging.current = false;
-        const deltaX = currentX.current - startX.current;
-        const threshold = 100;
-        
-        if (Math.abs(deltaX) > threshold) {
-            // Swipe detected
-            const direction = deltaX > 0 ? 'right' : 'left';
-            performSwipe(direction);
-        } else {
-            // Snap back
-            if (cardRef.current) {
-                cardRef.current.style.transition = 'transform 0.3s ease-out, box-shadow 0.3s ease-out';
-                cardRef.current.style.transform = 'translateX(0) translateY(0) rotate(0deg)';
-                cardRef.current.style.boxShadow = 'none';
-            }
-        }
-    };
-
-    // Mouse events
-    const handleMouseDown = (e) => {
-        e.preventDefault();
-        handleStart(e.clientX, e.clientY);
-    };
-
-    const handleMouseMove = (e) => {
-        handleMove(e.clientX, e.clientY);
-    };
-
-    const handleMouseUp = () => {
-        handleEnd();
-    };
-
-    // Touch events
-    const handleTouchStart = (e) => {
-        const touch = e.touches[0];
-        handleStart(touch.clientX, touch.clientY);
-    };
-
-    const handleTouchMove = (e) => {
-        e.preventDefault();
-        const touch = e.touches[0];
-        handleMove(touch.clientX, touch.clientY);
-    };
-
-    const handleTouchEnd = () => {
-        handleEnd();
-    };
-
-    // Add global event listeners
-    useEffect(() => {
-        const handleGlobalMouseMove = (e) => handleMouseMove(e);
-        const handleGlobalMouseUp = () => handleMouseUp();
-
-        document.addEventListener('mousemove', handleGlobalMouseMove);
-        document.addEventListener('mouseup', handleGlobalMouseUp);
-
-        return () => {
-            document.removeEventListener('mousemove', handleGlobalMouseMove);
-            document.removeEventListener('mouseup', handleGlobalMouseUp);
-        };
-    }, []);
-
-    const performSwipe = (direction) => {
-        if (currentIndex >= discoveryData.length) return;
+    const handleSwipe = useCallback((direction) => {
+        if (currentIndex >= discoveryData.length || isAnimating) return;
         
         setIsAnimating(true);
-        setSwipeDirection(direction);
-        
         const currentItem = discoveryData[currentIndex];
         
         if (direction === 'right') {
             setLikedItems(prev => [...prev, currentItem]);
-        } else {
+        } else if (direction === 'left') {
             setPassedItems(prev => [...prev, currentItem]);
         }
         
-        if (cardRef.current) {
-            const translateX = direction === 'right' ? '100vw' : '-100vw';
-            cardRef.current.style.transition = 'transform 0.5s ease-out, opacity 0.5s ease-out';
-            cardRef.current.style.transform = `translateX(${translateX}) rotate(${direction === 'right' ? '30deg' : '-30deg'})`;
-            cardRef.current.style.opacity = '0';
-        }
-        
+        // Wait for animation to complete before moving to next card
         setTimeout(() => {
             setCurrentIndex(prev => prev + 1);
             setIsAnimating(false);
-            setSwipeDirection(null);
-            if (cardRef.current) {
-                cardRef.current.style.transition = 'none';
-                cardRef.current.style.transform = 'translateX(0) translateY(0) rotate(0deg)';
-                cardRef.current.style.opacity = '1';
-                cardRef.current.style.boxShadow = 'none';
-            }
-        }, 500);
-    };
-
-    const handleLike = () => {
-        performSwipe('right');
-    };
-
-    const handlePass = () => {
-        performSwipe('left');
-    };
+        }, 400);
+    }, [currentIndex, discoveryData.length, isAnimating]);
 
     const handleReset = () => {
         setCurrentIndex(0);
         setLikedItems([]);
         setPassedItems([]);
-        if (cardRef.current) {
-            cardRef.current.style.transition = 'none';
-            cardRef.current.style.transform = 'translateX(0) translateY(0) rotate(0deg)';
-            cardRef.current.style.opacity = '1';
-            cardRef.current.style.boxShadow = 'none';
-        }
+        setIsAnimating(false);
     };
 
     if (loading) {
         return (
-            <div className="min-h-screen py-8 bg-black flex flex-col items-center justify-center">
+            <div className="min-h-screen py-8 bg-gradient-to-br from-gray-900 via-black to-gray-900 flex flex-col items-center justify-center">
                 <div className="text-white text-center mb-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-                    <p className="mt-2">Loading discovery content...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mx-auto" />
+                    <p className="mt-4 text-lg">Loading discovery content...</p>
                 </div>
             </div>
         );
@@ -230,159 +89,458 @@ export default function Discover() {
 
     if (currentIndex >= discoveryData.length) {
         return (
-            <div className="min-h-screen py-8 bg-black flex flex-col items-center justify-center">
-                <div className="text-center text-white">
-                    <h1 className="text-4xl font-bold mb-4">No more content!</h1>
-                    <p className="text-gray-400 mb-6">You've seen all available movies and shows.</p>
-                    <p className="text-sm text-gray-500 mb-6">
-                        Liked: {likedItems.length} | Passed: {passedItems.length}
-                    </p>
+            <div className="min-h-screen py-8 bg-gradient-to-br from-gray-900 via-black to-gray-900 flex flex-col items-center justify-center">
+                <div className="text-center text-white max-w-md mx-auto px-4">
+                    <div className="animate-bounce mb-4">
+                        <div className="text-6xl mb-4">🎬</div>
+                    </div>
+                    <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                        All Done!
+                    </h1>
+                    <p className="text-gray-400 mb-8 text-lg">You've discovered all available content.</p>
+                    <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-gray-700">
+                        <div className="flex justify-center gap-8 text-lg">
+                            <div className="text-center">
+                                <div className="text-green-400 text-2xl mb-1">❤️</div>
+                                <div className="text-green-400 font-bold">{likedItems.length}</div>
+                                <div className="text-gray-500 text-sm">Liked</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-red-400 text-2xl mb-1">✕</div>
+                                <div className="text-red-400 font-bold">{passedItems.length}</div>
+                                <div className="text-gray-500 text-sm">Passed</div>
+                            </div>
+                        </div>
+                    </div>
                     <button
                         onClick={handleReset}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full flex items-center gap-2 mx-auto transition-colors"
+                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-4 rounded-full flex items-center gap-3 mx-auto transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/25 font-semibold"
                     >
                         <RotateCcw className="w-5 h-5" />
-                        Start Over
+                        Discover Again
                     </button>
                 </div>
             </div>
         );
     }
 
-    const currentItem = discoveryData[currentIndex];
-    if (!currentItem) return null;
-
-    const {
-        name,
-        title,
-        poster_path,
-        first_air_date,
-        release_date,
-        media_type,
-        vote_average,
-        vote_count,
-        overview,
-        id,
-    } = currentItem;
-
     return (
-        <div className="min-h-screen py-8 bg-black flex flex-col items-center justify-center px-4">
+        <div className="min-h-screen py-8 bg-gradient-to-br from-gray-900 via-black to-gray-900 flex flex-col items-center justify-center px-4 overflow-hidden">
             {/* Header */}
-            <div className="text-center mb-6">
-                <h1 className="text-4xl font-bold text-white mb-2">Discover</h1>
-                <p className="text-white/70 text-sm">
-                    Swipe right to like, left to pass
+            <div className="text-center mb-8">
+                <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-red-400 bg-clip-text text-transparent mb-3">
+                    Discover
+                </h1>
+                <p className="text-gray-300 text-lg mb-2">
+                    Swipe right to like • Swipe left to pass
                 </p>
-                <p className="text-white/50 text-xs mt-1">
-                    {currentIndex + 1} / {discoveryData.length}
-                </p>
+                <div className="bg-gray-800/30 backdrop-blur-sm rounded-full px-4 py-2 inline-block border border-gray-700">
+                    <span className="text-gray-400 text-sm">
+                        {currentIndex + 1} of {discoveryData.length}
+                    </span>
+                </div>
             </div>
 
             {/* Card Stack */}
             <div className="relative w-full max-w-sm mx-auto mb-8">
-                {/* Next card (slightly behind) */}
-                {currentIndex + 1 < discoveryData.length && (
-                    <div 
-                        className="absolute inset-0 bg-gray-800 rounded-2xl shadow-lg transform scale-95 -z-10"
-                        style={{ top: '10px' }}
-                    >
-                        <div className="w-full h-full opacity-30 rounded-2xl bg-gray-700"></div>
-                    </div>
-                )}
+                <TinderSwipeStack
+                    data={discoveryData}
+                    currentIndex={currentIndex}
+                    onSwipe={handleSwipe}
+                    isAnimating={isAnimating}
+                    img_300={img_300}
+                    imagenotfound={imagenotfound}
+                />
+            </div>
 
-                {/* Current card */}
-                <div
-                    ref={cardRef}
-                    className="bg-gray-900 rounded-2xl shadow-2xl w-full overflow-hidden cursor-grab active:cursor-grabbing select-none"
-                    style={{ height: '600px', touchAction: 'none' }}
-                    onMouseDown={handleMouseDown}
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                >
-                    <div className="relative h-2/3">
+            {/* Action Buttons */}
+            <div className="flex items-center gap-6 mb-6">
+                <ActionButton
+                    onClick={() => handleSwipe('left')}
+                    disabled={isAnimating}
+                    className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-red-500/25"
+                    icon={<X className="w-8 h-8" />}
+                />
+                
+                <ActionButton
+                    onClick={handleReset}
+                    className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 shadow-gray-500/25"
+                    icon={<RotateCcw className="w-6 h-6" />}
+                    small
+                />
+                
+                <ActionButton
+                    onClick={() => handleSwipe('right')}
+                    disabled={isAnimating}
+                    className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-green-500/25"
+                    icon={<Heart className="w-8 h-8" />}
+                />
+            </div>
+
+            {/* Live Stats */}
+            <div className="flex gap-8 text-base mb-6">
+                <StatBadge
+                    icon="❤️"
+                    label="Liked"
+                    count={likedItems.length}
+                    color="text-green-400"
+                />
+                <StatBadge
+                    icon="✕"
+                    label="Passed"
+                    count={passedItems.length}
+                    color="text-red-400"
+                />
+            </div>
+
+            {/* Footer */}
+            <footer className="text-gray-500 text-sm">
+                <p>made by jose idris</p>
+            </footer>
+        </div>
+    );
+}
+
+// Custom Tinder-like Swipe Stack Component
+function TinderSwipeStack({ data, currentIndex, onSwipe, isAnimating, img_300, imagenotfound }) {
+    const [dragState, setDragState] = useState({ isDragging: false, x: 0, y: 0, startX: 0, startY: 0 });
+    const [cardTransform, setCardTransform] = useState({ x: 0, y: 0, rotate: 0, scale: 1, opacity: 1 });
+    const cardRef = useRef(null);
+
+    const resetCard = useCallback(() => {
+        setCardTransform({ x: 0, y: 0, rotate: 0, scale: 1, opacity: 1 });
+        setDragState({ isDragging: false, x: 0, y: 0, startX: 0, startY: 0 });
+    }, []);
+
+    useEffect(() => {
+        resetCard();
+    }, [currentIndex, resetCard]);
+
+    const handleStart = useCallback((clientX, clientY) => {
+        if (isAnimating) return;
+        
+        setDragState({
+            isDragging: true,
+            startX: clientX,
+            startY: clientY,
+            x: 0,
+            y: 0
+        });
+    }, [isAnimating]);
+
+    // Mouse events
+    const handleMouseDown = useCallback((e) => {
+        e.preventDefault();
+        handleStart(e.clientX, e.clientY);
+    }, []);
+
+    const handleMouseMove = useCallback((e) => {
+        handleMove(e.clientX, e.clientY);
+    }, [dragState.isDragging, dragState.startX, dragState.startY]);
+
+    const handleMouseUp = useCallback(() => {
+        handleEnd();
+    }, [dragState.isDragging, dragState.x]);
+
+    // Touch events
+    const handleTouchStart = useCallback((e) => {
+        const touch = e.touches[0];
+        handleStart(touch.clientX, touch.clientY);
+    }, []);
+
+    const handleTouchMove = useCallback((e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        handleMove(touch.clientX, touch.clientY);
+    }, [dragState.isDragging, dragState.startX, dragState.startY]);
+
+    const handleTouchEnd = useCallback(() => {
+        handleEnd();
+    }, [dragState.isDragging, dragState.x]);
+
+    // Global event listeners
+    useEffect(() => {
+        if (dragState.isDragging) {
+            const handleGlobalMouseMove = (e) => {
+                if (!dragState.isDragging) return;
+                
+                const deltaX = e.clientX - dragState.startX;
+                const deltaY = e.clientY - dragState.startY;
+
+                const maxRotation = 15;
+                const rotationFactor = 0.1;
+                const rotation = Math.max(-maxRotation, Math.min(maxRotation, deltaX * rotationFactor));
+                
+                const maxScale = 1;
+                const minScale = 0.95;
+                const scaleFactor = 1 - Math.abs(deltaX) * 0.0003;
+                const scale = Math.max(minScale, Math.min(maxScale, scaleFactor));
+                
+                const opacityFactor = 1 - Math.abs(deltaX) * 0.001;
+                const opacity = Math.max(0.7, Math.min(1, opacityFactor));
+
+                setDragState(prev => ({ ...prev, x: deltaX, y: deltaY }));
+                setCardTransform({
+                    x: deltaX,
+                    y: deltaY * 0.5,
+                    rotate: rotation,
+                    scale: scale,
+                    opacity: opacity
+                });
+            };
+
+            const handleGlobalMouseUp = () => {
+                if (!dragState.isDragging) return;
+
+                const { x } = dragState;
+                const swipeThreshold = 80;
+
+                if (Math.abs(x) > swipeThreshold) {
+                    const direction = x > 0 ? 'right' : 'left';
+                    
+                    const exitX = direction === 'right' ? window.innerWidth + 100 : -window.innerWidth - 100;
+                    const exitRotation = direction === 'right' ? 25 : -25;
+                    
+                    setCardTransform({
+                        x: exitX,
+                        y: cardTransform.y + (Math.random() - 0.5) * 100,
+                        rotate: exitRotation,
+                        scale: 0.8,
+                        opacity: 0
+                    });
+                    
+                    onSwipe(direction);
+                } else {
+                    resetCard();
+                }
+            };
+
+            const handleGlobalTouchMove = (e) => {
+                if (!dragState.isDragging || !e.touches[0]) return;
+                e.preventDefault();
+                
+                const touch = e.touches[0];
+                const deltaX = touch.clientX - dragState.startX;
+                const deltaY = touch.clientY - dragState.startY;
+
+                const maxRotation = 15;
+                const rotationFactor = 0.1;
+                const rotation = Math.max(-maxRotation, Math.min(maxRotation, deltaX * rotationFactor));
+                
+                const maxScale = 1;
+                const minScale = 0.95;
+                const scaleFactor = 1 - Math.abs(deltaX) * 0.0003;
+                const scale = Math.max(minScale, Math.min(maxScale, scaleFactor));
+                
+                const opacityFactor = 1 - Math.abs(deltaX) * 0.001;
+                const opacity = Math.max(0.7, Math.min(1, opacityFactor));
+
+                setDragState(prev => ({ ...prev, x: deltaX, y: deltaY }));
+                setCardTransform({
+                    x: deltaX,
+                    y: deltaY * 0.5,
+                    rotate: rotation,
+                    scale: scale,
+                    opacity: opacity
+                });
+            };
+
+            const handleGlobalTouchEnd = () => {
+                if (!dragState.isDragging) return;
+
+                const { x } = dragState;
+                const swipeThreshold = 80;
+
+                if (Math.abs(x) > swipeThreshold) {
+                    const direction = x > 0 ? 'right' : 'left';
+                    
+                    const exitX = direction === 'right' ? window.innerWidth + 100 : -window.innerWidth - 100;
+                    const exitRotation = direction === 'right' ? 25 : -25;
+                    
+                    setCardTransform({
+                        x: exitX,
+                        y: cardTransform.y + (Math.random() - 0.5) * 100,
+                        rotate: exitRotation,
+                        scale: 0.8,
+                        opacity: 0
+                    });
+                    
+                    onSwipe(direction);
+                } else {
+                    resetCard();
+                }
+            };
+
+            document.addEventListener('mousemove', handleGlobalMouseMove);
+            document.addEventListener('mouseup', handleGlobalMouseUp);
+            document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+            document.addEventListener('touchend', handleGlobalTouchEnd);
+
+            return () => {
+                document.removeEventListener('mousemove', handleGlobalMouseMove);
+                document.removeEventListener('mouseup', handleGlobalMouseUp);
+                document.removeEventListener('touchmove', handleGlobalTouchMove);
+                document.removeEventListener('touchend', handleGlobalTouchEnd);
+            };
+        }
+    }, [dragState.isDragging, dragState.startX, dragState.startY, dragState.x, onSwipe, resetCard, cardTransform.y]);
+
+    const currentItem = data[currentIndex];
+    const nextItem = data[currentIndex + 1];
+    const thirdItem = data[currentIndex + 2];
+
+    if (!currentItem) return null;
+
+    const { name, title, poster_path, first_air_date, release_date, media_type, vote_average, vote_count, overview } = currentItem;
+
+    // Calculate indicator opacities
+    const likeOpacity = Math.max(0, Math.min(1, dragState.x / 80));
+    const passOpacity = Math.max(0, Math.min(1, -dragState.x / 80));
+
+    return (
+        <div className="relative" style={{ height: '650px' }}>
+            {/* Third card (bottom of stack) */}
+            {thirdItem && (
+                <div className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl opacity-20 transform scale-90 -rotate-1" style={{ zIndex: 1 }}>
+                    <div className="w-full h-full rounded-3xl overflow-hidden">
                         <img
-                            src={poster_path ? `${img_300}/${poster_path}` : imagenotfound}
-                            className="w-full h-full object-cover"
-                            alt={title || name || "Movie poster"}
-                            loading="lazy"
-                            draggable={false}
+                            src={thirdItem.poster_path ? `${img_300}/${thirdItem.poster_path}` : imagenotfound}
+                            className="w-full h-2/3 object-cover"
+                            alt="Card 3"
                         />
-                        <span className="absolute top-4 left-4 bg-black/70 text-white text-xs px-3 py-1 rounded-full">
-                            {media_type === "tv" ? "TV Series" : "Movie"}
-                        </span>
-                        {vote_average > 0 && (
-                            <span className="absolute top-4 right-4 flex items-center bg-yellow-400/90 text-black text-xs px-3 py-1 rounded-full font-semibold">
-                                {vote_average.toFixed(1)}
-                                <Star className="ml-1 w-3 h-3 fill-current" />
-                            </span>
-                        )}
-                        
-                        {/* Swipe indicators */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className={`absolute left-8 transform rotate-12 border-4 border-green-500 text-green-500 px-4 py-2 rounded-lg font-bold text-2xl transition-opacity ${swipeDirection === 'right' ? 'opacity-100' : 'opacity-0'}`}>
-                                LIKE
-                            </div>
-                            <div className={`absolute right-8 transform -rotate-12 border-4 border-red-500 text-red-500 px-4 py-2 rounded-lg font-bold text-2xl transition-opacity ${swipeDirection === 'left' ? 'opacity-100' : 'opacity-0'}`}>
-                                PASS
-                            </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Second card (middle of stack) */}
+            {nextItem && (
+                <div className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl opacity-60 transform scale-95" style={{ zIndex: 2 }}>
+                    <div className="w-full h-full rounded-3xl overflow-hidden">
+                        <img
+                            src={nextItem.poster_path ? `${img_300}/${nextItem.poster_path}` : imagenotfound}
+                            className="w-full h-2/3 object-cover"
+                            alt="Next card"
+                        />
+                        <div className="p-4 h-1/3 bg-gray-800 flex flex-col justify-center">
+                            <h3 className="text-white font-semibold text-lg truncate">
+                                {nextItem.title || nextItem.name}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Main interactive card */}
+            <div
+                ref={cardRef}
+                className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl shadow-2xl overflow-hidden cursor-grab select-none border border-gray-700"
+                style={{
+                    transform: `translate(${cardTransform.x}px, ${cardTransform.y}px) rotate(${cardTransform.rotate}deg) scale(${cardTransform.scale})`,
+                    opacity: cardTransform.opacity,
+                    zIndex: 10,
+                    cursor: dragState.isDragging ? 'grabbing' : 'grab',
+                    transition: dragState.isDragging ? 'none' : 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                }}
+                onMouseDown={handleMouseDown}
+                onTouchStart={handleTouchStart}
+            >
+                {/* Image Section */}
+                <div className="relative h-2/3 overflow-hidden">
+                    <img
+                        src={poster_path ? `${img_300}/${poster_path}` : imagenotfound}
+                        className="w-full h-full object-cover"
+                        alt={title || name || "Movie poster"}
+                        draggable={false}
+                    />
+                    
+                    {/* Gradient overlays */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+                    
+                    {/* Media type badge */}
+                    <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md text-white text-sm px-4 py-2 rounded-full border border-white/20 font-medium">
+                        {media_type === "tv" ? "📺 TV Series" : "🎬 Movie"}
+                    </div>
+                    
+                    {/* Rating badge */}
+                    {vote_average > 0 && (
+                        <div className="absolute top-4 right-4 flex items-center bg-yellow-400/95 backdrop-blur-md text-black text-sm px-4 py-2 rounded-full font-bold border border-yellow-300">
+                            <Star className="mr-1 w-4 h-4 fill-current" />
+                            {vote_average.toFixed(1)}
+                        </div>
+                    )}
+                    
+                    {/* Enhanced Swipe Indicators */}
+                    <div
+                        className="absolute left-8 top-1/2 transform -translate-y-1/2 rotate-12 transition-all duration-200"
+                        style={{ 
+                            opacity: likeOpacity,
+                            transform: `translateY(-50%) rotate(12deg) scale(${0.8 + likeOpacity * 0.4})`
+                        }}
+                    >
+                        <div className="border-4 border-green-400 text-green-400 px-8 py-4 rounded-3xl font-black text-3xl bg-black/40 backdrop-blur-sm shadow-2xl">
+                            LIKE
                         </div>
                     </div>
                     
-                    <div className="p-6 h-1/3 flex flex-col">
-                        <h2 className="text-xl font-bold text-white mb-2 line-clamp-1">
-                            {title || name}
-                        </h2>
-                        <div className="flex items-center text-sm text-gray-400 mb-3">
-                            <span>
-                                {first_air_date || release_date || "Unknown"}
-                            </span>
-                            {vote_count && (
-                                <span className="ml-2">({vote_count} votes)</span>
-                            )}
+                    <div
+                        className="absolute right-8 top-1/2 transform -translate-y-1/2 -rotate-12 transition-all duration-200"
+                        style={{ 
+                            opacity: passOpacity,
+                            transform: `translateY(-50%) rotate(-12deg) scale(${0.8 + passOpacity * 0.4})`
+                        }}
+                    >
+                        <div className="border-4 border-red-400 text-red-400 px-8 py-4 rounded-3xl font-black text-3xl bg-black/40 backdrop-blur-sm shadow-2xl">
+                            PASS
                         </div>
-                        <p className="text-gray-300 text-sm flex-1 line-clamp-3 leading-relaxed">
-                            {overview || "No overview available."}
-                        </p>
                     </div>
                 </div>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex items-center gap-6">
-                <button
-                    onClick={handlePass}
-                    disabled={isAnimating}
-                    className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white p-4 rounded-full transition-colors shadow-lg"
-                >
-                    <X className="w-6 h-6" />
-                </button>
                 
-                <button
-                    onClick={handleReset}
-                    className="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full transition-colors"
-                >
-                    <RotateCcw className="w-5 h-5" />
-                </button>
-                
-                <button
-                    onClick={handleLike}
-                    disabled={isAnimating}
-                    className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white p-4 rounded-full transition-colors shadow-lg"
-                >
-                    <Heart className="w-6 h-6" />
-                </button>
+                {/* Content Section */}
+                <div className="p-6 h-1/3 flex flex-col bg-gradient-to-b from-gray-800 to-gray-900 border-t border-gray-700">
+                    <h2 className="text-2xl font-bold text-white mb-3 line-clamp-1">
+                        {title || name}
+                    </h2>
+                    <div className="flex items-center text-gray-400 mb-3 text-sm">
+                        <span className="bg-gray-700 px-3 py-1 rounded-full mr-3">
+                            {first_air_date || release_date || "Unknown"}
+                        </span>
+                        {vote_count && (
+                            <span className="bg-gray-700 px-3 py-1 rounded-full">
+                                {vote_count.toLocaleString()} votes
+                            </span>
+                        )}
+                    </div>
+                    <p className="text-gray-300 text-sm flex-1 leading-relaxed line-clamp-3">
+                        {overview || "No overview available."}
+                    </p>
+                </div>
             </div>
+        </div>
+    );
+}
 
-            {/* Stats */}
-            <div className="mt-6 flex gap-8 text-sm text-gray-400">
-                <span>❤️ Liked: {likedItems.length}</span>
-                <span>✕ Passed: {passedItems.length}</span>
+// Action Button Component
+function ActionButton({ onClick, disabled, className, icon, small }) {
+    return (
+        <button
+            onClick={onClick}
+            disabled={disabled}
+            className={`${className} ${small ? 'p-3' : 'p-5'} rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 hover:shadow-2xl active:scale-95 font-semibold text-white`}
+        >
+            {icon}
+        </button>
+    );
+}
+
+// Stat Badge Component
+function StatBadge({ icon, label, count, color }) {
+    return (
+        <div className="flex items-center gap-2 bg-gray-800/50 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-700">
+            <span className="text-lg">{icon}</span>
+            <div className="text-center">
+                <div className={`${color} font-bold text-lg`}>{count}</div>
+                <div className="text-gray-500 text-xs">{label}</div>
             </div>
-
-            <footer className="mt-8 text-gray-500 text-sm">
-                <p className="text-center">made by jose idris</p>
-            </footer>
         </div>
     );
 }
