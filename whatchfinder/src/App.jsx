@@ -4,6 +4,7 @@ import ForgotPassword from './Auth/ForgotPassword.jsx';
 import SignUp from './Auth/Signup.jsx';
 import  Login from './Auth/Login.jsx';
 import SharedWatchlist from './SharedWatchlist.jsx';
+import Discover from './Discover.jsx';
 
 import LandingPage from './Landingpage/landingpage.jsx';
 
@@ -29,6 +30,12 @@ export default function App() {
             </PublicRoute>
             
             } />
+          <Route path="/discover" element={
+            <ProtectedRoute>
+            <Discover />
+            </ProtectedRoute>
+            } />
+            
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/login" element={
             <PublicRoute>
