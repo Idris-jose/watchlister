@@ -62,11 +62,11 @@ export default function Discover() {
             setPassedItems(prev => [...prev, currentItem]);
         }
         
-        // Wait for animation to complete before moving to next card
+        // Reduced animation time for snappier feel
         setTimeout(() => {
             setCurrentIndex(prev => prev + 1);
             setIsAnimating(false);
-        }, 400);
+        }, 300);
     }, [currentIndex, discoveryData.length, isAnimating]);
 
     const handleReset = () => {
@@ -201,189 +201,204 @@ export default function Discover() {
     );
 }
 
-// Custom Tinder-like Swipe Stack Component
+// Enhanced Tinder-like Swipe Stack Component with smooth animations
 function TinderSwipeStack({ data, currentIndex, onSwipe, isAnimating, img_300, imagenotfound }) {
-    const [dragState, setDragState] = useState({ isDragging: false, x: 0, y: 0, startX: 0, startY: 0 });
+    const [dragState, setDragState] = useState({ 
+        isDragging: false, 
+        x: 0, 
+        y: 0, 
+        startX: 0, 
+        startY: 0,
+        velocity: 0,
+        lastX: 0,
+        lastTime: 0
+    });
     const [cardTransform, setCardTransform] = useState({ x: 0, y: 0, rotate: 0, scale: 1, opacity: 1 });
     const cardRef = useRef(null);
+    const rafRef = useRef(null);
 
     const resetCard = useCallback(() => {
         setCardTransform({ x: 0, y: 0, rotate: 0, scale: 1, opacity: 1 });
-        setDragState({ isDragging: false, x: 0, y: 0, startX: 0, startY: 0 });
+        setDragState({ 
+            isDragging: false, 
+            x: 0, 
+            y: 0, 
+            startX: 0, 
+            startY: 0,
+            velocity: 0,
+            lastX: 0,
+            lastTime: 0
+        });
+        if (rafRef.current) {
+            cancelAnimationFrame(rafRef.current);
+        }
     }, []);
 
     useEffect(() => {
         resetCard();
     }, [currentIndex, resetCard]);
 
+    // Optimized transform calculation with easing
+    const calculateTransform = useCallback((deltaX, deltaY, velocity = 0) => {
+        const maxRotation = 20;
+        const rotationFactor = 0.08;
+        const rotation = Math.max(-maxRotation, Math.min(maxRotation, deltaX * rotationFactor));
+        
+        // Smoother scaling with less aggressive factors
+        const maxScale = 1;
+        const minScale = 0.98;
+        const scaleFactor = 1 - Math.abs(deltaX) * 0.0001;
+        const scale = Math.max(minScale, Math.min(maxScale, scaleFactor));
+        
+        // More gradual opacity change
+        const opacityFactor = 1 - Math.abs(deltaX) * 0.0008;
+        const opacity = Math.max(0.8, Math.min(1, opacityFactor));
+
+        // Add subtle Y movement based on velocity for more natural feel
+        const yOffset = deltaY * 0.3 + (velocity * 0.1);
+
+        return {
+            x: deltaX,
+            y: yOffset,
+            rotate: rotation,
+            scale: scale,
+            opacity: opacity
+        };
+    }, []);
+
     const handleStart = useCallback((clientX, clientY) => {
         if (isAnimating) return;
         
+        const now = Date.now();
         setDragState({
             isDragging: true,
             startX: clientX,
             startY: clientY,
             x: 0,
-            y: 0
+            y: 0,
+            velocity: 0,
+            lastX: clientX,
+            lastTime: now
         });
+
+        // Add haptic feedback on supported devices
+        if (navigator.vibrate && window.DeviceMotionEvent) {
+            navigator.vibrate(1);
+        }
     }, [isAnimating]);
 
-    // Mouse events
-    const handleMouseDown = useCallback((e) => {
+    const updateTransform = useCallback((clientX, clientY) => {
+        if (!dragState.isDragging) return;
+
+        const now = Date.now();
+        const deltaX = clientX - dragState.startX;
+        const deltaY = clientY - dragState.startY;
+        
+        // Calculate velocity for momentum
+        const timeDelta = now - dragState.lastTime;
+        const velocity = timeDelta > 0 ? (clientX - dragState.lastX) / timeDelta : 0;
+
+        const transform = calculateTransform(deltaX, deltaY, velocity);
+        setCardTransform(transform);
+        
+        setDragState(prev => ({
+            ...prev,
+            x: deltaX,
+            y: deltaY,
+            velocity: velocity,
+            lastX: clientX,
+            lastTime: now
+        }));
+    }, [dragState.isDragging, dragState.startX, dragState.startY, dragState.lastX, dragState.lastTime, calculateTransform]);
+
+    const handleEnd = useCallback(() => {
+        if (!dragState.isDragging) return;
+
+        const { x, velocity } = dragState;
+        const swipeThreshold = 60; // Reduced threshold for easier swiping
+        const velocityThreshold = 0.5; // Velocity-based swiping
+        
+        const shouldSwipe = Math.abs(x) > swipeThreshold || Math.abs(velocity) > velocityThreshold;
+        
+        if (shouldSwipe) {
+            const direction = (x > 0 || velocity > 0) ? 'right' : 'left';
+            
+            // Enhanced exit animation with momentum
+            const momentumFactor = Math.max(1, Math.abs(velocity) * 2);
+            const exitX = direction === 'right' 
+                ? (window.innerWidth + 200) * momentumFactor 
+                : -(window.innerWidth + 200) * momentumFactor;
+            const exitRotation = direction === 'right' ? 30 : -30;
+            
+            setCardTransform({
+                x: exitX,
+                y: cardTransform.y + (Math.random() - 0.5) * 150,
+                rotate: exitRotation,
+                scale: 0.7,
+                opacity: 0
+            });
+            
+            onSwipe(direction);
+        } else {
+            // Smooth spring-back animation
+            resetCard();
+        }
+    }, [dragState.isDragging, dragState.x, dragState.velocity, cardTransform.y, onSwipe, resetCard]);
+
+    // Optimized mouse/touch event handlers
+    const handlePointerDown = useCallback((e) => {
         e.preventDefault();
-        handleStart(e.clientX, e.clientY);
-    }, []);
+        const clientX = e.clientX || (e.touches && e.touches[0]?.clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0]?.clientY);
+        if (clientX !== undefined && clientY !== undefined) {
+            handleStart(clientX, clientY);
+        }
+    }, [handleStart]);
 
-    const handleMouseMove = useCallback((e) => {
-        handleMove(e.clientX, e.clientY);
-    }, [dragState.isDragging, dragState.startX, dragState.startY]);
-
-    const handleMouseUp = useCallback(() => {
-        handleEnd();
-    }, [dragState.isDragging, dragState.x]);
-
-    // Touch events
-    const handleTouchStart = useCallback((e) => {
-        const touch = e.touches[0];
-        handleStart(touch.clientX, touch.clientY);
-    }, []);
-
-    const handleTouchMove = useCallback((e) => {
+    const handlePointerMove = useCallback((e) => {
+        if (!dragState.isDragging) return;
         e.preventDefault();
-        const touch = e.touches[0];
-        handleMove(touch.clientX, touch.clientY);
-    }, [dragState.isDragging, dragState.startX, dragState.startY]);
+        
+        const clientX = e.clientX || (e.touches && e.touches[0]?.clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0]?.clientY);
+        
+        if (clientX !== undefined && clientY !== undefined) {
+            // Use requestAnimationFrame for smoother updates
+            if (rafRef.current) {
+                cancelAnimationFrame(rafRef.current);
+            }
+            rafRef.current = requestAnimationFrame(() => {
+                updateTransform(clientX, clientY);
+            });
+        }
+    }, [dragState.isDragging, updateTransform]);
 
-    const handleTouchEnd = useCallback(() => {
+    const handlePointerUp = useCallback(() => {
+        if (rafRef.current) {
+            cancelAnimationFrame(rafRef.current);
+        }
         handleEnd();
-    }, [dragState.isDragging, dragState.x]);
+    }, [handleEnd]);
 
-    // Global event listeners
+    // Global event listeners with proper cleanup
     useEffect(() => {
         if (dragState.isDragging) {
-            const handleGlobalMouseMove = (e) => {
-                if (!dragState.isDragging) return;
-                
-                const deltaX = e.clientX - dragState.startX;
-                const deltaY = e.clientY - dragState.startY;
+            const handleGlobalMove = (e) => handlePointerMove(e);
+            const handleGlobalUp = () => handlePointerUp();
 
-                const maxRotation = 15;
-                const rotationFactor = 0.1;
-                const rotation = Math.max(-maxRotation, Math.min(maxRotation, deltaX * rotationFactor));
-                
-                const maxScale = 1;
-                const minScale = 0.95;
-                const scaleFactor = 1 - Math.abs(deltaX) * 0.0003;
-                const scale = Math.max(minScale, Math.min(maxScale, scaleFactor));
-                
-                const opacityFactor = 1 - Math.abs(deltaX) * 0.001;
-                const opacity = Math.max(0.7, Math.min(1, opacityFactor));
-
-                setDragState(prev => ({ ...prev, x: deltaX, y: deltaY }));
-                setCardTransform({
-                    x: deltaX,
-                    y: deltaY * 0.5,
-                    rotate: rotation,
-                    scale: scale,
-                    opacity: opacity
-                });
-            };
-
-            const handleGlobalMouseUp = () => {
-                if (!dragState.isDragging) return;
-
-                const { x } = dragState;
-                const swipeThreshold = 80;
-
-                if (Math.abs(x) > swipeThreshold) {
-                    const direction = x > 0 ? 'right' : 'left';
-                    
-                    const exitX = direction === 'right' ? window.innerWidth + 100 : -window.innerWidth - 100;
-                    const exitRotation = direction === 'right' ? 25 : -25;
-                    
-                    setCardTransform({
-                        x: exitX,
-                        y: cardTransform.y + (Math.random() - 0.5) * 100,
-                        rotate: exitRotation,
-                        scale: 0.8,
-                        opacity: 0
-                    });
-                    
-                    onSwipe(direction);
-                } else {
-                    resetCard();
-                }
-            };
-
-            const handleGlobalTouchMove = (e) => {
-                if (!dragState.isDragging || !e.touches[0]) return;
-                e.preventDefault();
-                
-                const touch = e.touches[0];
-                const deltaX = touch.clientX - dragState.startX;
-                const deltaY = touch.clientY - dragState.startY;
-
-                const maxRotation = 15;
-                const rotationFactor = 0.1;
-                const rotation = Math.max(-maxRotation, Math.min(maxRotation, deltaX * rotationFactor));
-                
-                const maxScale = 1;
-                const minScale = 0.95;
-                const scaleFactor = 1 - Math.abs(deltaX) * 0.0003;
-                const scale = Math.max(minScale, Math.min(maxScale, scaleFactor));
-                
-                const opacityFactor = 1 - Math.abs(deltaX) * 0.001;
-                const opacity = Math.max(0.7, Math.min(1, opacityFactor));
-
-                setDragState(prev => ({ ...prev, x: deltaX, y: deltaY }));
-                setCardTransform({
-                    x: deltaX,
-                    y: deltaY * 0.5,
-                    rotate: rotation,
-                    scale: scale,
-                    opacity: opacity
-                });
-            };
-
-            const handleGlobalTouchEnd = () => {
-                if (!dragState.isDragging) return;
-
-                const { x } = dragState;
-                const swipeThreshold = 80;
-
-                if (Math.abs(x) > swipeThreshold) {
-                    const direction = x > 0 ? 'right' : 'left';
-                    
-                    const exitX = direction === 'right' ? window.innerWidth + 100 : -window.innerWidth - 100;
-                    const exitRotation = direction === 'right' ? 25 : -25;
-                    
-                    setCardTransform({
-                        x: exitX,
-                        y: cardTransform.y + (Math.random() - 0.5) * 100,
-                        rotate: exitRotation,
-                        scale: 0.8,
-                        opacity: 0
-                    });
-                    
-                    onSwipe(direction);
-                } else {
-                    resetCard();
-                }
-            };
-
-            document.addEventListener('mousemove', handleGlobalMouseMove);
-            document.addEventListener('mouseup', handleGlobalMouseUp);
-            document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
-            document.addEventListener('touchend', handleGlobalTouchEnd);
+            document.addEventListener('mousemove', handleGlobalMove, { passive: false });
+            document.addEventListener('mouseup', handleGlobalUp);
+            document.addEventListener('touchmove', handleGlobalMove, { passive: false });
+            document.addEventListener('touchend', handleGlobalUp);
 
             return () => {
-                document.removeEventListener('mousemove', handleGlobalMouseMove);
-                document.removeEventListener('mouseup', handleGlobalMouseUp);
-                document.removeEventListener('touchmove', handleGlobalTouchMove);
-                document.removeEventListener('touchend', handleGlobalTouchEnd);
+                document.removeEventListener('mousemove', handleGlobalMove);
+                document.removeEventListener('mouseup', handleGlobalUp);
+                document.removeEventListener('touchmove', handleGlobalMove);
+                document.removeEventListener('touchend', handleGlobalUp);
             };
         }
-    }, [dragState.isDragging, dragState.startX, dragState.startY, dragState.x, onSwipe, resetCard, cardTransform.y]);
+    }, [dragState.isDragging, handlePointerMove, handlePointerUp]);
 
     const currentItem = data[currentIndex];
     const nextItem = data[currentIndex + 1];
@@ -393,20 +408,24 @@ function TinderSwipeStack({ data, currentIndex, onSwipe, isAnimating, img_300, i
 
     const { name, title, poster_path, first_air_date, release_date, media_type, vote_average, vote_count, overview } = currentItem;
 
-    // Calculate indicator opacities
-    const likeOpacity = Math.max(0, Math.min(1, dragState.x / 80));
-    const passOpacity = Math.max(0, Math.min(1, -dragState.x / 80));
+    // Smoother indicator animations
+    const likeOpacity = Math.max(0, Math.min(1, dragState.x / 60));
+    const passOpacity = Math.max(0, Math.min(1, -dragState.x / 60));
 
     return (
         <div className="relative" style={{ height: '650px' }}>
             {/* Third card (bottom of stack) */}
             {thirdItem && (
-                <div className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl opacity-20 transform scale-90 -rotate-1" style={{ zIndex: 1 }}>
+                <div 
+                    className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl opacity-20 transform scale-90 -rotate-1 transition-all duration-500 ease-out" 
+                    style={{ zIndex: 1 }}
+                >
                     <div className="w-full h-full rounded-3xl overflow-hidden">
                         <img
                             src={thirdItem.poster_path ? `${img_300}/${thirdItem.poster_path}` : imagenotfound}
                             className="w-full h-2/3 object-cover"
                             alt="Card 3"
+                            loading="lazy"
                         />
                     </div>
                 </div>
@@ -414,12 +433,16 @@ function TinderSwipeStack({ data, currentIndex, onSwipe, isAnimating, img_300, i
 
             {/* Second card (middle of stack) */}
             {nextItem && (
-                <div className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl opacity-60 transform scale-95" style={{ zIndex: 2 }}>
+                <div 
+                    className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl opacity-60 transform scale-95 transition-all duration-400 ease-out" 
+                    style={{ zIndex: 2 }}
+                >
                     <div className="w-full h-full rounded-3xl overflow-hidden">
                         <img
                             src={nextItem.poster_path ? `${img_300}/${nextItem.poster_path}` : imagenotfound}
                             className="w-full h-2/3 object-cover"
                             alt="Next card"
+                            loading="lazy"
                         />
                         <div className="p-4 h-1/3 bg-gray-800 flex flex-col justify-center">
                             <h3 className="text-white font-semibold text-lg truncate">
@@ -430,27 +453,30 @@ function TinderSwipeStack({ data, currentIndex, onSwipe, isAnimating, img_300, i
                 </div>
             )}
 
-            {/* Main interactive card */}
+            {/* Main interactive card with hardware acceleration */}
             <div
                 ref={cardRef}
-                className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl shadow-2xl overflow-hidden cursor-grab select-none border border-gray-700"
+                className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl shadow-2xl overflow-hidden cursor-grab select-none border border-gray-700 will-change-transform"
                 style={{
-                    transform: `translate(${cardTransform.x}px, ${cardTransform.y}px) rotate(${cardTransform.rotate}deg) scale(${cardTransform.scale})`,
+                    transform: `translate3d(${cardTransform.x}px, ${cardTransform.y}px, 0) rotate(${cardTransform.rotate}deg) scale(${cardTransform.scale})`,
                     opacity: cardTransform.opacity,
                     zIndex: 10,
                     cursor: dragState.isDragging ? 'grabbing' : 'grab',
-                    transition: dragState.isDragging ? 'none' : 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                    transition: dragState.isDragging ? 'none' : 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    backfaceVisibility: 'hidden',
+                    perspective: '1000px'
                 }}
-                onMouseDown={handleMouseDown}
-                onTouchStart={handleTouchStart}
+                onMouseDown={handlePointerDown}
+                onTouchStart={handlePointerDown}
             >
                 {/* Image Section */}
                 <div className="relative h-2/3 overflow-hidden">
                     <img
                         src={poster_path ? `${img_300}/${poster_path}` : imagenotfound}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transform-gpu"
                         alt={title || name || "Movie poster"}
                         draggable={false}
+                        loading="eager"
                     />
                     
                     {/* Gradient overlays */}
@@ -469,12 +495,13 @@ function TinderSwipeStack({ data, currentIndex, onSwipe, isAnimating, img_300, i
                         </div>
                     )}
                     
-                    {/* Enhanced Swipe Indicators */}
+                    {/* Enhanced Swipe Indicators with smoother animations */}
                     <div
-                        className="absolute left-8 top-1/2 transform -translate-y-1/2 rotate-12 transition-all duration-200"
+                        className="absolute left-8 top-1/2 transform -translate-y-1/2 rotate-12 will-change-transform"
                         style={{ 
                             opacity: likeOpacity,
-                            transform: `translateY(-50%) rotate(12deg) scale(${0.8 + likeOpacity * 0.4})`
+                            transform: `translateY(-50%) translateZ(0) rotate(12deg) scale(${0.8 + likeOpacity * 0.4})`,
+                            transition: 'transform 0.1s ease-out'
                         }}
                     >
                         <div className="border-4 border-green-400 text-green-400 px-8 py-4 rounded-3xl font-black text-3xl bg-black/40 backdrop-blur-sm shadow-2xl">
@@ -483,10 +510,11 @@ function TinderSwipeStack({ data, currentIndex, onSwipe, isAnimating, img_300, i
                     </div>
                     
                     <div
-                        className="absolute right-8 top-1/2 transform -translate-y-1/2 -rotate-12 transition-all duration-200"
+                        className="absolute right-8 top-1/2 transform -translate-y-1/2 -rotate-12 will-change-transform"
                         style={{ 
                             opacity: passOpacity,
-                            transform: `translateY(-50%) rotate(-12deg) scale(${0.8 + passOpacity * 0.4})`
+                            transform: `translateY(-50%) translateZ(0) rotate(-12deg) scale(${0.8 + passOpacity * 0.4})`,
+                            transition: 'transform 0.1s ease-out'
                         }}
                     >
                         <div className="border-4 border-red-400 text-red-400 px-8 py-4 rounded-3xl font-black text-3xl bg-black/40 backdrop-blur-sm shadow-2xl">
