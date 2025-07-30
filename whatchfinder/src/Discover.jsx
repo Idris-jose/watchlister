@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { Star, Heart, X, RotateCcw } from 'lucide-react';
 
 export default function Discover() {
@@ -10,7 +10,10 @@ export default function Discover() {
     const [isAnimating, setIsAnimating] = useState(false);
     
     const API_KEY = "56185e1e9a25474a6cf2f5748dfb6ebf";
-    const randomPage = Math.floor(Math.random() * 300) + 1;
+    const randomPage = Math.floor(Math.random() * 10) + 1;
+    const today = new Date();
+    const recentDate = new Date(today.getFullYear() - 20, today.getMonth(), today.getDate()).toISOString().split('T')[0];
+    
     const img_300 = "https://image.tmdb.org/t/p/w300";
     const imagenotfound = "https://via.placeholder.com/300x450/374151/9CA3AF?text=No+Image";
 
@@ -19,8 +22,8 @@ export default function Discover() {
             try {
                 setLoading(true);
                 const [moviesResponse, seriesResponse] = await Promise.all([
-                    fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&page=${randomPage}&sort_by=popularity.desc`),
-                    fetch(`https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&page=${randomPage}&sort_by=popularity.desc`)
+                    fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&page=${randomPage}&sort_by=popularity.desc&primary_release_date.gte=${recentDate}&vote_count.gte=100&with_original_language=en`),
+                    fetch(`https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&page=${randomPage}&sort_by=popularity.desc&first_air_date.gte=${recentDate}&vote_count.gte=100&with_original_language=en`)
                 ]);
 
                 const moviesData = await moviesResponse.json();
@@ -62,11 +65,10 @@ export default function Discover() {
             setPassedItems(prev => [...prev, currentItem]);
         }
         
-        // Reduced animation time for snappier feel
         setTimeout(() => {
             setCurrentIndex(prev => prev + 1);
             setIsAnimating(false);
-        }, 300);
+        }, 250);
     }, [currentIndex, discoveryData.length, isAnimating]);
 
     const handleReset = () => {
@@ -201,204 +203,252 @@ export default function Discover() {
     );
 }
 
-// Enhanced Tinder-like Swipe Stack Component with smooth animations
+// Ultra smooth swipe stack with optimized performance
 function TinderSwipeStack({ data, currentIndex, onSwipe, isAnimating, img_300, imagenotfound }) {
-    const [dragState, setDragState] = useState({ 
-        isDragging: false, 
-        x: 0, 
-        y: 0, 
-        startX: 0, 
-        startY: 0,
-        velocity: 0,
-        lastX: 0,
+    const [gesture, setGesture] = useState({
+        x: 0,
+        y: 0,
+        rotation: 0,
+        scale: 1,
+        opacity: 1,
+        isDragging: false,
+        velocity: { x: 0, y: 0 },
+        lastPosition: { x: 0, y: 0 },
         lastTime: 0
     });
-    const [cardTransform, setCardTransform] = useState({ x: 0, y: 0, rotate: 0, scale: 1, opacity: 1 });
+
     const cardRef = useRef(null);
     const rafRef = useRef(null);
+    const velocityTrackerRef = useRef([]);
+    const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
 
-    const resetCard = useCallback(() => {
-        setCardTransform({ x: 0, y: 0, rotate: 0, scale: 1, opacity: 1 });
-        setDragState({ 
-            isDragging: false, 
-            x: 0, 
-            y: 0, 
-            startX: 0, 
-            startY: 0,
-            velocity: 0,
-            lastX: 0,
-            lastTime: 0
-        });
-        if (rafRef.current) {
-            cancelAnimationFrame(rafRef.current);
-        }
-    }, []);
-
-    useEffect(() => {
-        resetCard();
-    }, [currentIndex, resetCard]);
-
-    // Optimized transform calculation with easing
-    const calculateTransform = useCallback((deltaX, deltaY, velocity = 0) => {
-        const maxRotation = 20;
-        const rotationFactor = 0.08;
-        const rotation = Math.max(-maxRotation, Math.min(maxRotation, deltaX * rotationFactor));
-        
-        // Smoother scaling with less aggressive factors
-        const maxScale = 1;
-        const minScale = 0.98;
-        const scaleFactor = 1 - Math.abs(deltaX) * 0.0001;
-        const scale = Math.max(minScale, Math.min(maxScale, scaleFactor));
-        
-        // More gradual opacity change
-        const opacityFactor = 1 - Math.abs(deltaX) * 0.0008;
-        const opacity = Math.max(0.8, Math.min(1, opacityFactor));
-
-        // Add subtle Y movement based on velocity for more natural feel
-        const yOffset = deltaY * 0.3 + (velocity * 0.1);
-
+    // Memoized transform calculations for better performance
+    const transformStyle = useMemo(() => {
+        const { x, y, rotation, scale, opacity } = gesture;
         return {
-            x: deltaX,
-            y: yOffset,
-            rotate: rotation,
-            scale: scale,
-            opacity: opacity
+            transform: `translate3d(${x}px, ${y}px, 0) rotate(${rotation}deg) scale(${scale})`,
+            opacity: opacity,
+            willChange: gesture.isDragging ? 'transform, opacity' : 'auto',
+            transition: gesture.isDragging ? 'none' : 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+        };
+    }, [gesture]);
+
+    // Enhanced physics calculations
+    const calculatePhysics = useCallback((deltaX, deltaY, velocity = { x: 0, y: 0 }) => {
+        const maxRotation = 25;
+        const rotationMultiplier = 0.1;
+        const resistance = 0.8;
+        
+        // Smooth rotation with velocity influence
+        const rotation = Math.max(-maxRotation, Math.min(maxRotation, 
+            deltaX * rotationMultiplier + velocity.x * 0.02
+        ));
+        
+        // Subtle scaling with smoother curves
+        const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+        const scale = Math.max(0.95, 1 - (distance * 0.00015));
+        
+        // Opacity with velocity consideration
+        const opacity = Math.max(0.7, 1 - (Math.abs(deltaX) * 0.0012));
+        
+        // Add slight Y movement for natural feel
+        const adjustedY = deltaY * resistance + (Math.abs(deltaX) * 0.1);
+        
+        return { 
+            x: deltaX, 
+            y: adjustedY, 
+            rotation, 
+            scale, 
+            opacity 
         };
     }, []);
 
-    const handleStart = useCallback((clientX, clientY) => {
+    // Optimized velocity tracking
+    const updateVelocity = useCallback((x, y) => {
+        const now = performance.now();
+        const tracker = velocityTrackerRef.current;
+        
+        // Keep only recent samples for smooth velocity calculation
+        tracker.push({ x, y, time: now });
+        if (tracker.length > 5) tracker.shift();
+        
+        if (tracker.length >= 2) {
+            const recent = tracker[tracker.length - 1];
+            const previous = tracker[tracker.length - 2];
+            const timeDelta = recent.time - previous.time;
+            
+            if (timeDelta > 0) {
+                return {
+                    x: (recent.x - previous.x) / timeDelta,
+                    y: (recent.y - previous.y) / timeDelta
+                };
+            }
+        }
+        
+        return { x: 0, y: 0 };
+    }, []);
+
+    // Enhanced pointer event handlers
+    const handlePointerStart = useCallback((e) => {
         if (isAnimating) return;
         
-        const now = Date.now();
-        setDragState({
+        e.preventDefault();
+        const pointer = e.touches ? e.touches[0] : e;
+        const { clientX, clientY } = pointer;
+        const now = performance.now();
+        
+        touchStartRef.current = { x: clientX, y: clientY, time: now };
+        velocityTrackerRef.current = [{ x: clientX, y: clientY, time: now }];
+        
+        setGesture(prev => ({
+            ...prev,
             isDragging: true,
-            startX: clientX,
-            startY: clientY,
-            x: 0,
-            y: 0,
-            velocity: 0,
-            lastX: clientX,
+            lastPosition: { x: clientX, y: clientY },
             lastTime: now
-        });
+        }));
 
-        // Add haptic feedback on supported devices
-        if (navigator.vibrate && window.DeviceMotionEvent) {
+        // Prevent default behaviors
+        document.body.style.touchAction = 'none';
+        document.body.style.userSelect = 'none';
+        
+        // Add slight haptic feedback on mobile
+        if (navigator.vibrate) {
             navigator.vibrate(1);
         }
     }, [isAnimating]);
 
-    const updateTransform = useCallback((clientX, clientY) => {
-        if (!dragState.isDragging) return;
-
-        const now = Date.now();
-        const deltaX = clientX - dragState.startX;
-        const deltaY = clientY - dragState.startY;
-        
-        // Calculate velocity for momentum
-        const timeDelta = now - dragState.lastTime;
-        const velocity = timeDelta > 0 ? (clientX - dragState.lastX) / timeDelta : 0;
-
-        const transform = calculateTransform(deltaX, deltaY, velocity);
-        setCardTransform(transform);
-        
-        setDragState(prev => ({
-            ...prev,
-            x: deltaX,
-            y: deltaY,
-            velocity: velocity,
-            lastX: clientX,
-            lastTime: now
-        }));
-    }, [dragState.isDragging, dragState.startX, dragState.startY, dragState.lastX, dragState.lastTime, calculateTransform]);
-
-    const handleEnd = useCallback(() => {
-        if (!dragState.isDragging) return;
-
-        const { x, velocity } = dragState;
-        const swipeThreshold = 60; // Reduced threshold for easier swiping
-        const velocityThreshold = 0.5; // Velocity-based swiping
-        
-        const shouldSwipe = Math.abs(x) > swipeThreshold || Math.abs(velocity) > velocityThreshold;
-        
-        if (shouldSwipe) {
-            const direction = (x > 0 || velocity > 0) ? 'right' : 'left';
-            
-            // Enhanced exit animation with momentum
-            const momentumFactor = Math.max(1, Math.abs(velocity) * 2);
-            const exitX = direction === 'right' 
-                ? (window.innerWidth + 200) * momentumFactor 
-                : -(window.innerWidth + 200) * momentumFactor;
-            const exitRotation = direction === 'right' ? 30 : -30;
-            
-            setCardTransform({
-                x: exitX,
-                y: cardTransform.y + (Math.random() - 0.5) * 150,
-                rotate: exitRotation,
-                scale: 0.7,
-                opacity: 0
-            });
-            
-            onSwipe(direction);
-        } else {
-            // Smooth spring-back animation
-            resetCard();
-        }
-    }, [dragState.isDragging, dragState.x, dragState.velocity, cardTransform.y, onSwipe, resetCard]);
-
-    // Optimized mouse/touch event handlers
-    const handlePointerDown = useCallback((e) => {
-        e.preventDefault();
-        const clientX = e.clientX || (e.touches && e.touches[0]?.clientX);
-        const clientY = e.clientY || (e.touches && e.touches[0]?.clientY);
-        if (clientX !== undefined && clientY !== undefined) {
-            handleStart(clientX, clientY);
-        }
-    }, [handleStart]);
-
     const handlePointerMove = useCallback((e) => {
-        if (!dragState.isDragging) return;
+        if (!gesture.isDragging) return;
+        
         e.preventDefault();
+        const pointer = e.touches ? e.touches[0] : e;
+        const { clientX, clientY } = pointer;
         
-        const clientX = e.clientX || (e.touches && e.touches[0]?.clientX);
-        const clientY = e.clientY || (e.touches && e.touches[0]?.clientY);
+        const deltaX = clientX - touchStartRef.current.x;
+        const deltaY = clientY - touchStartRef.current.y;
         
-        if (clientX !== undefined && clientY !== undefined) {
-            // Use requestAnimationFrame for smoother updates
-            if (rafRef.current) {
-                cancelAnimationFrame(rafRef.current);
-            }
-            rafRef.current = requestAnimationFrame(() => {
-                updateTransform(clientX, clientY);
-            });
-        }
-    }, [dragState.isDragging, updateTransform]);
-
-    const handlePointerUp = useCallback(() => {
+        const velocity = updateVelocity(clientX, clientY);
+        const physics = calculatePhysics(deltaX, deltaY, velocity);
+        
+        // Use RAF for smooth updates
         if (rafRef.current) {
             cancelAnimationFrame(rafRef.current);
         }
-        handleEnd();
-    }, [handleEnd]);
+        
+        rafRef.current = requestAnimationFrame(() => {
+            setGesture(prev => ({
+                ...prev,
+                ...physics,
+                velocity,
+                lastPosition: { x: clientX, y: clientY },
+                lastTime: performance.now()
+            }));
+        });
+    }, [gesture.isDragging, updateVelocity, calculatePhysics]);
 
-    // Global event listeners with proper cleanup
-    useEffect(() => {
-        if (dragState.isDragging) {
-            const handleGlobalMove = (e) => handlePointerMove(e);
-            const handleGlobalUp = () => handlePointerUp();
-
-            document.addEventListener('mousemove', handleGlobalMove, { passive: false });
-            document.addEventListener('mouseup', handleGlobalUp);
-            document.addEventListener('touchmove', handleGlobalMove, { passive: false });
-            document.addEventListener('touchend', handleGlobalUp);
-
-            return () => {
-                document.removeEventListener('mousemove', handleGlobalMove);
-                document.removeEventListener('mouseup', handleGlobalUp);
-                document.removeEventListener('touchmove', handleGlobalMove);
-                document.removeEventListener('touchend', handleGlobalUp);
-            };
+    const handlePointerEnd = useCallback(() => {
+        if (!gesture.isDragging) return;
+        
+        const { x, velocity } = gesture;
+        const swipeThreshold = 50;
+        const velocityThreshold = 0.3;
+        
+        // Improved swipe detection with momentum
+        const hasEnoughDistance = Math.abs(x) > swipeThreshold;
+        const hasEnoughVelocity = Math.abs(velocity.x) > velocityThreshold;
+        const shouldSwipe = hasEnoughDistance || hasEnoughVelocity;
+        
+        // Reset body styles
+        document.body.style.touchAction = '';
+        document.body.style.userSelect = '';
+        
+        if (shouldSwipe) {
+            const direction = (x > 0 || velocity.x > 0) ? 'right' : 'left';
+            const momentumMultiplier = Math.max(1.5, Math.abs(velocity.x) * 3);
+            
+            // Enhanced exit animation
+            const exitX = direction === 'right' 
+                ? window.innerWidth * momentumMultiplier 
+                : -window.innerWidth * momentumMultiplier;
+            
+            const exitRotation = direction === 'right' ? 30 : -30;
+            const exitY = gesture.y + (Math.random() - 0.5) * 100;
+            
+            setGesture(prev => ({
+                ...prev,
+                x: exitX,
+                y: exitY,
+                rotation: exitRotation,
+                scale: 0.8,
+                opacity: 0,
+                isDragging: false
+            }));
+            
+            // Trigger swipe callback with slight delay for animation
+            setTimeout(() => onSwipe(direction), 100);
+        } else {
+            // Smooth return animation
+            setGesture(prev => ({
+                ...prev,
+                x: 0,
+                y: 0,
+                rotation: 0,
+                scale: 1,
+                opacity: 1,
+                isDragging: false,
+                velocity: { x: 0, y: 0 }
+            }));
         }
-    }, [dragState.isDragging, handlePointerMove, handlePointerUp]);
+        
+        // Clear velocity tracker
+        velocityTrackerRef.current = [];
+    }, [gesture, onSwipe]);
+
+    // Reset gesture on card change
+    useEffect(() => {
+        setGesture({
+            x: 0,
+            y: 0,
+            rotation: 0,
+            scale: 1,
+            opacity: 1,
+            isDragging: false,
+            velocity: { x: 0, y: 0 },
+            lastPosition: { x: 0, y: 0 },
+            lastTime: 0
+        });
+        velocityTrackerRef.current = [];
+    }, [currentIndex]);
+
+    // Global event listeners
+    useEffect(() => {
+        if (!gesture.isDragging) return;
+
+        const handleGlobalMove = (e) => handlePointerMove(e);
+        const handleGlobalEnd = () => handlePointerEnd();
+
+        // Add passive: false for better performance on touch devices
+        const options = { passive: false };
+        
+        document.addEventListener('mousemove', handleGlobalMove, options);
+        document.addEventListener('mouseup', handleGlobalEnd);
+        document.addEventListener('touchmove', handleGlobalMove, options);
+        document.addEventListener('touchend', handleGlobalEnd);
+        document.addEventListener('touchcancel', handleGlobalEnd);
+
+        return () => {
+            document.removeEventListener('mousemove', handleGlobalMove);
+            document.removeEventListener('mouseup', handleGlobalEnd);
+            document.removeEventListener('touchmove', handleGlobalMove);
+            document.removeEventListener('touchend', handleGlobalEnd);
+            document.removeEventListener('touchcancel', handleGlobalEnd);
+            
+            // Cleanup RAF
+            if (rafRef.current) {
+                cancelAnimationFrame(rafRef.current);
+            }
+        };
+    }, [gesture.isDragging, handlePointerMove, handlePointerEnd]);
 
     const currentItem = data[currentIndex];
     const nextItem = data[currentIndex + 1];
@@ -408,34 +458,42 @@ function TinderSwipeStack({ data, currentIndex, onSwipe, isAnimating, img_300, i
 
     const { name, title, poster_path, first_air_date, release_date, media_type, vote_average, vote_count, overview } = currentItem;
 
-    // Smoother indicator animations
-    const likeOpacity = Math.max(0, Math.min(1, dragState.x / 60));
-    const passOpacity = Math.max(0, Math.min(1, -dragState.x / 60));
+    // Smooth indicator calculations
+    const likeOpacity = Math.max(0, Math.min(1, gesture.x / 80));
+    const passOpacity = Math.max(0, Math.min(1, -gesture.x / 80));
+    const indicatorScale = 0.9 + (Math.max(likeOpacity, passOpacity) * 0.3);
 
     return (
         <div className="relative" style={{ height: '650px' }}>
-            {/* Third card (bottom of stack) */}
+            {/* Background cards with improved stacking */}
             {thirdItem && (
                 <div 
-                    className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl opacity-20 transform scale-90 -rotate-1 transition-all duration-500 ease-out" 
-                    style={{ zIndex: 1 }}
+                    className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl opacity-30 transform scale-90 rotate-1"
+                    style={{ 
+                        zIndex: 1,
+                        transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                        transformOrigin: 'center bottom'
+                    }}
                 >
                     <div className="w-full h-full rounded-3xl overflow-hidden">
                         <img
                             src={thirdItem.poster_path ? `${img_300}/${thirdItem.poster_path}` : imagenotfound}
                             className="w-full h-2/3 object-cover"
-                            alt="Card 3"
+                            alt="Background card"
                             loading="lazy"
                         />
                     </div>
                 </div>
             )}
 
-            {/* Second card (middle of stack) */}
             {nextItem && (
                 <div 
-                    className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl opacity-60 transform scale-95 transition-all duration-400 ease-out" 
-                    style={{ zIndex: 2 }}
+                    className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl opacity-70 transform scale-95"
+                    style={{ 
+                        zIndex: 2,
+                        transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                        transformOrigin: 'center bottom'
+                    }}
                 >
                     <div className="w-full h-full rounded-3xl overflow-hidden">
                         <img
@@ -453,30 +511,35 @@ function TinderSwipeStack({ data, currentIndex, onSwipe, isAnimating, img_300, i
                 </div>
             )}
 
-            {/* Main interactive card with hardware acceleration */}
+            {/* Main interactive card */}
             <div
                 ref={cardRef}
-                className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl shadow-2xl overflow-hidden cursor-grab select-none border border-gray-700 will-change-transform"
+                className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl shadow-2xl overflow-hidden select-none border border-gray-700"
                 style={{
-                    transform: `translate3d(${cardTransform.x}px, ${cardTransform.y}px, 0) rotate(${cardTransform.rotate}deg) scale(${cardTransform.scale})`,
-                    opacity: cardTransform.opacity,
+                    ...transformStyle,
                     zIndex: 10,
-                    cursor: dragState.isDragging ? 'grabbing' : 'grab',
-                    transition: dragState.isDragging ? 'none' : 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    cursor: gesture.isDragging ? 'grabbing' : 'grab',
+                    touchAction: 'none',
                     backfaceVisibility: 'hidden',
-                    perspective: '1000px'
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform3d: true
                 }}
-                onMouseDown={handlePointerDown}
-                onTouchStart={handlePointerDown}
+                onMouseDown={handlePointerStart}
+                onTouchStart={handlePointerStart}
             >
                 {/* Image Section */}
                 <div className="relative h-2/3 overflow-hidden">
                     <img
                         src={poster_path ? `${img_300}/${poster_path}` : imagenotfound}
-                        className="w-full h-full object-cover transform-gpu"
+                        className="w-full h-full object-cover"
                         alt={title || name || "Movie poster"}
                         draggable={false}
                         loading="eager"
+                        style={{ 
+                            pointerEvents: 'none',
+                            userSelect: 'none',
+                            WebkitUserSelect: 'none'
+                        }}
                     />
                     
                     {/* Gradient overlays */}
@@ -495,29 +558,29 @@ function TinderSwipeStack({ data, currentIndex, onSwipe, isAnimating, img_300, i
                         </div>
                     )}
                     
-                    {/* Enhanced Swipe Indicators with smoother animations */}
+                    {/* Ultra smooth swipe indicators */}
                     <div
-                        className="absolute left-8 top-1/2 transform -translate-y-1/2 rotate-12 will-change-transform"
+                        className="absolute left-8 top-1/2 transform -translate-y-1/2 rotate-12 pointer-events-none"
                         style={{ 
                             opacity: likeOpacity,
-                            transform: `translateY(-50%) translateZ(0) rotate(12deg) scale(${0.8 + likeOpacity * 0.4})`,
-                            transition: 'transform 0.1s ease-out'
+                            transform: `translateY(-50%) rotate(12deg) scale(${indicatorScale})`,
+                            transition: gesture.isDragging ? 'none' : 'all 0.2s ease-out'
                         }}
                     >
-                        <div className="border-4 border-green-400 text-green-400 px-8 py-4 rounded-3xl font-black text-3xl bg-black/40 backdrop-blur-sm shadow-2xl">
+                        <div className="border-4 border-green-400 text-green-400 px-8 py-4 rounded-3xl font-black text-3xl bg-black/50 backdrop-blur-sm shadow-2xl">
                             LIKE
                         </div>
                     </div>
                     
                     <div
-                        className="absolute right-8 top-1/2 transform -translate-y-1/2 -rotate-12 will-change-transform"
+                        className="absolute right-8 top-1/2 transform -translate-y-1/2 -rotate-12 pointer-events-none"
                         style={{ 
                             opacity: passOpacity,
-                            transform: `translateY(-50%) translateZ(0) rotate(-12deg) scale(${0.8 + passOpacity * 0.4})`,
-                            transition: 'transform 0.1s ease-out'
+                            transform: `translateY(-50%) rotate(-12deg) scale(${indicatorScale})`,
+                            transition: gesture.isDragging ? 'none' : 'all 0.2s ease-out'
                         }}
                     >
-                        <div className="border-4 border-red-400 text-red-400 px-8 py-4 rounded-3xl font-black text-3xl bg-black/40 backdrop-blur-sm shadow-2xl">
+                        <div className="border-4 border-red-400 text-red-400 px-8 py-4 rounded-3xl font-black text-3xl bg-black/50 backdrop-blur-sm shadow-2xl">
                             PASS
                         </div>
                     </div>
@@ -553,7 +616,7 @@ function ActionButton({ onClick, disabled, className, icon, small }) {
         <button
             onClick={onClick}
             disabled={disabled}
-            className={`${className} ${small ? 'p-3' : 'p-5'} rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 hover:shadow-2xl active:scale-95 font-semibold text-white`}
+            className={`${className} ${small ? 'p-3' : 'p-5'} rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 hover:shadow-2xl active:scale-95 font-semibold text-white transform-gpu`}
         >
             {icon}
         </button>
