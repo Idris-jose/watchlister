@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useWatchlist } from './Watchlistcontext.jsx';
 import { Star, Heart, X, RotateCcw } from 'lucide-react';
 
 export default function Discover() {
@@ -8,9 +9,21 @@ export default function Discover() {
     const [likedItems, setLikedItems] = useState([]);
     const [passedItems, setPassedItems] = useState([]);
     const [isAnimating, setIsAnimating] = useState(false);
+
+    const { addToWatchlist } = useWatchlist();
+
+    const handleAddToWatchlist = (movie) => {
+    const movieToAdd = movie || selectedMovie;
+    if (!movieToAdd) return;
+    
+    addToWatchlist(movieToAdd);
+    
+    if (!movie) handleCloseModal();
+  };
+
     
     const API_KEY = "56185e1e9a25474a6cf2f5748dfb6ebf";
-    const randomPage = Math.floor(Math.random() * 10) + 1;
+    const randomPage = Math.floor(Math.random() * 100) + 1;
     const today = new Date();
     const recentDate = new Date(today.getFullYear() - 20, today.getMonth(), today.getDate()).toISOString().split('T')[0];
     
@@ -61,6 +74,7 @@ export default function Discover() {
         
         if (direction === 'right') {
             setLikedItems(prev => [...prev, currentItem]);
+            handleAddToWatchlist(currentItem);
         } else if (direction === 'left') {
             setPassedItems(prev => [...prev, currentItem]);
         }
@@ -126,11 +140,12 @@ export default function Discover() {
         );
     }
 
+
     return (
-        <div className="min-h-screen py-8 bg-gradient-to-br from-gray-900 via-black to-gray-900 flex flex-col items-center justify-center px-4 overflow-hidden">
+        <div className="min-h-screen py-8 bg-black flex flex-col items-center justify-center px-4 overflow-hidden">
             {/* Header */}
             <div className="text-center mb-8">
-                <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-red-400 bg-clip-text text-transparent mb-3">
+                <h1 className="text-5xl font-bold text-white mb-3">
                     Discover
                 </h1>
                 <p className="text-gray-300 text-lg mb-2">
@@ -465,13 +480,15 @@ function TinderSwipeStack({ data, currentIndex, onSwipe, isAnimating, img_300, i
 
     return (
         <div className="relative" style={{ height: '650px' }}>
-            {/* Background cards with improved stacking */}
+            {/* Background cards with smooth transitions - NO SNAP BACK */}
             {thirdItem && (
                 <div 
-                    className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl opacity-30 transform scale-90 rotate-1"
+                    className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl"
                     style={{ 
                         zIndex: 1,
-                        transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                        opacity: 0.3,
+                        transform: 'scale(0.90) rotate(1deg)',
+                        transition: 'opacity 0.6s ease-out, transform 0.6s ease-out',
                         transformOrigin: 'center bottom'
                     }}
                 >
@@ -488,10 +505,14 @@ function TinderSwipeStack({ data, currentIndex, onSwipe, isAnimating, img_300, i
 
             {nextItem && (
                 <div 
-                    className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl opacity-70 transform scale-95"
+                    className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl"
                     style={{ 
                         zIndex: 2,
-                        transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                        opacity: gesture.isDragging ? Math.min(1, 0.7 + (Math.abs(gesture.x) / 400)) : 0.7,
+                        transform: gesture.isDragging 
+                            ? `scale(${Math.min(1, 0.95 + (Math.abs(gesture.x) / 800))}) translateY(${-Math.abs(gesture.x) / 30}px)`
+                            : 'scale(0.95)',
+                        transition: gesture.isDragging ? 'none' : 'all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
                         transformOrigin: 'center bottom'
                     }}
                 >
