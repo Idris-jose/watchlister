@@ -398,7 +398,7 @@ export default function Discover() {
 
 
     return (
-        <div className="min-h-screen py-8 bg-black flex flex-col items-center justify-center px-4 overflow-hidden">
+        <div className="min-h-screen py-8 bg-gradient-to-br from-gray-900 via-black to-gray-900 flex flex-col items-center justify-center px-4 overflow-hidden">
             {/* Header */}
             <div className="text-center mb-8">
                 <h1 className="text-5xl font-bold text-white mb-3">
