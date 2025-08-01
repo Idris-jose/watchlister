@@ -107,12 +107,12 @@ export default function Discover() {
 
     if (loading) {
         return (
-            <div className="min-h-screen py-8 bg-gradient-to-br from-gray-900 via-black to-gray-900 flex flex-col items-center justify-center">
-                <div className="text-white text-center mb-4">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mx-auto" />
-                    <p className="mt-4 text-lg">Loading discovery content...</p>
-                </div>
-            </div>
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
         );
     }
 
@@ -126,28 +126,9 @@ export default function Discover() {
                     <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                         All Done!
                     </h1>
-                    <p className="text-gray-400 mb-8 text-lg">You've discovered all available content.</p>
-                    <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-gray-700">
-                        <div className="flex justify-center gap-8 text-lg">
-                            <div className="text-center">
-                                <div className="text-green-400 text-2xl mb-1">❤️</div>
-                                <div className="text-green-400 font-bold">{likedItems.length}</div>
-                                <div className="text-gray-500 text-sm">Liked</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-red-400 text-2xl mb-1">✕</div>
-                                <div className="text-red-400 font-bold">{passedItems.length}</div>
-                                <div className="text-gray-500 text-sm">Passed</div>
-                            </div>
-                        </div>
-                    </div>
-                    <button
-                        onClick={handleReset}
-                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-4 rounded-full flex items-center gap-3 mx-auto transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/25 font-semibold"
-                    >
-                        <RotateCcw className="w-5 h-5" />
-                        Discover Again
-                    </button>
+                    <p className="text-gray-400 mb-8 text-lg">You've discovered all available content.<span  className='text-green-500'>Refresh to discover more</span></p>
+                  
+                  
                 </div>
             </div>
         );

@@ -204,7 +204,7 @@ export default function Login() {
             <p className="text-gray-600">
               Don't have an account?{' '}
               <Link
-                to="/"
+                to="/signup"
                 className="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-colors duration-200"
               >
                 Create one here

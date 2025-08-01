@@ -336,7 +336,7 @@ function Home1() {
   };
 
   return (
-    <div className="min-h-screen py-8 bg-black flex flex-col items-center">
+    <div className="min-h-screen py-8 bg-gradient-to-br from-gray-900 via-black to-gray-900  flex flex-col items-center">
       {/* Movie Modal */}
       <MovieModal
         open={modalOpen}
@@ -346,7 +346,7 @@ function Home1() {
       
       {/* Header Section */}
       <div className="flex flex-col items-center justify-center mb-4 relative">
-        <img src={logo} alt="WatchFinder Logo" className="w-70 " />
+       
 
          <div className="col-span-full text-center text-white/70 font-medium text-lg mt-3">
               Search for movies or TV shows to get started
@@ -364,16 +364,7 @@ function Home1() {
           />
         </div>
 
-        <Link to="/Watchlist">
-          <div className="absolute top-5 right-5 flex items-center">
-            <Clapperboard className='text-white w-8 h-8' />
-            {number > 0 && (
-              <span className="ml-1 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                {number}
-              </span>
-            )}
-          </div>
-        </Link>
+        
       </div>
         
       {/* Loading indicator */}
