@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { SearchCheck, Star, Plus, Info, X, Play, Calendar, Clock, Users, Clapperboard, Tv } from 'lucide-react'
+import { Search as Searches, Star, Plus, Info, X, Play, Calendar, Clock, Users, Clapperboard, Tv } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import logo from './assets/logo.png'
 import imagenotfound from './assets/imagenotfound.png'
@@ -349,20 +349,21 @@ function Home1() {
        
 
          <div className="col-span-full text-center text-white/70 font-medium text-lg mt-3">
-              Search for movies or TV shows to get started
+              Search for movies or TV shows 
             </div>
 
-        <div className="flex items-center bg-gray-900 rounded p-2 lg:w-2xl md:w-xl mt-3 mb-3 sm:w-lg">
-          <SearchCheck className="w-5 h-5 text-gray-400 mr-2" />
-          <input
-            type="text"
-            placeholder="Search for movies or TV shows..."
-            value={searchText}
-            onChange={(e) => updateSearchText(e.target.value)}
-            className="bg-transparent text-white w-full focus:outline-none"
-            aria-label="Search watchlist"
-          />
-        </div>
+
+         <div className="flex items-center bg-gray-800 rounded-lg p-2 lg:w-2xl md:w-xl mt-3 mb-3 sm:w-lg shadow-sm">
+                     <Searches className="w-5 h-5 text-gray-400 mr-2" />
+                    <input
+                      type="text"
+                      placeholder="Search for movies or TV shows..."
+                      value={searchText}
+                      onChange={(e) => updateSearchText(e.target.value)}
+                      className="bg-transparent text-white w-full focus:outline-none placeholder-gray-400"
+                      aria-label="Search watchlist"
+                    />
+                  </div>
 
         
       </div>

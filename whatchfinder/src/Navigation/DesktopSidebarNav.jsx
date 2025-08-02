@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useSidebar } from '../SidebarContext.jsx';
 import { useAuth } from '../Auth/AuthContext.jsx';
+import { useWatchlist } from '../Watchlistcontext.jsx';
 import logo from '../assets/logo.png'
 import { 
   Clapperboard as Watchlist, 
@@ -17,11 +19,13 @@ import {
 } from 'lucide-react';
 
 export default function DesktopSidebarNav() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const {number} = useWatchlist()
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+
+  const { isCollapsed, setIsCollapsed } = useSidebar();
   const handleLogout = async () => {
     try {
       await logout();
@@ -63,6 +67,7 @@ export default function DesktopSidebarNav() {
         {/* Navigation Items */}
         <div className="flex-1 py-6">
           <ul className="space-y-2">
+           
             {navigationItems.map((item) => (
               <li key={item.path} className={isCollapsed ? 'px-2' : 'px-3'}>
                 <NavLink
