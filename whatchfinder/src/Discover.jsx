@@ -53,41 +53,28 @@ export default function Discover() {
         async function fetchDiscoveryData() {
             try {
                 setLoading(true);
-                // Mock data for demo - replace with your actual API calls
-                const mockData = [
-                    {
-                        id: 1,
-                        title: "Sample Movie 1",
-                        media_type: "movie",
-                        poster_path: "/sample1.jpg",
-                        release_date: "2024-01-01",
-                        overview: "This is a sample movie description for demonstration purposes.",
-                        vote_average: 8.5,
-                        vote_count: 1234
-                    },
-                    {
-                        id: 2,
-                        name: "Sample TV Show",
-                        media_type: "tv",
-                        poster_path: "/sample2.jpg",
-                        first_air_date: "2024-02-01",
-                        overview: "This is a sample TV show description for demonstration purposes.",
-                        vote_average: 7.8,
-                        vote_count: 987
-                    },
-                    {
-                        id: 3,
-                        title: "Another Movie",
-                        media_type: "movie",
-                        poster_path: "/sample3.jpg",
-                        release_date: "2024-03-01",
-                        overview: "Another sample movie with a longer description to show how the text wraps and displays in the card.",
-                        vote_average: 9.2,
-                        vote_count: 2468
-                    }
-                ];
+                const [moviesResponse, seriesResponse] = await Promise.all([
+                    fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&page=${randomPage}&sort_by=popularity.desc&primary_release_date.gte=${recentDate}&vote_count.gte=100&with_original_language=en`),
+                    fetch(`https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&page=${randomPage}&sort_by=popularity.desc&first_air_date.gte=${recentDate}&vote_count.gte=100&with_original_language=en`)
+                ]);
+
+                const moviesData = await moviesResponse.json();
+                const seriesData = await seriesResponse.json();
+
+                const movies = moviesData.results.map(item => ({
+                    ...item,
+                    media_type: 'movie'
+                }));
+
+                const series = seriesData.results.map(item => ({
+                    ...item,
+                    media_type: 'tv'
+                }));
+
+                const combined = [...movies, ...series];
+                const shuffled = combined.sort(() => Math.random() - 0.5);
                 
-                setDiscoveryData(mockData);
+                setDiscoveryData(shuffled);
             } catch (error) {
                 console.error('Error fetching discovery data:', error);
             } finally {
