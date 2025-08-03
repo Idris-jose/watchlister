@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { useWatchlist } from './Watchlistcontext.jsx';
-import { Star, Heart, X, RotateCcw,Info } from 'lucide-react';
+import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
+import { Star, Heart, X, RotateCcw, Info, Calendar, Clock, Tv, Play, Users } from 'lucide-react';
+import { useWatchlist } from './Watchlistcontext';
+
+
 
 export default function Discover() {
     const [discoveryData, setDiscoveryData] = useState([]);
@@ -22,18 +25,21 @@ export default function Discover() {
         trailers,
         fetchTrailers,
         loadingTrailers,
-        
     } = useWatchlist();
 
     const handleAddToWatchlist = (movie) => {
-    const movieToAdd = movie || selectedMovie;
-    if (!movieToAdd) return;
-    
-    addToWatchlist(movieToAdd);
-    
-    if (!movie) handleCloseModal();
-  };
+        const movieToAdd = movie || selectedMovie;
+        if (!movieToAdd) return;
+        
+        addToWatchlist(movieToAdd);
+        
+        if (!movie) handleCloseModal();
+    };
 
+    const handleCloseModal = () => {
+        setModalOpen(false);
+        setSelectedMovie(null);
+    };
     
     const API_KEY = "56185e1e9a25474a6cf2f5748dfb6ebf";
     const randomPage = Math.floor(Math.random() * 100) + 1;
@@ -47,28 +53,41 @@ export default function Discover() {
         async function fetchDiscoveryData() {
             try {
                 setLoading(true);
-                const [moviesResponse, seriesResponse] = await Promise.all([
-                    fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&page=${randomPage}&sort_by=popularity.desc&primary_release_date.gte=${recentDate}&vote_count.gte=100&with_original_language=en`),
-                    fetch(`https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&page=${randomPage}&sort_by=popularity.desc&first_air_date.gte=${recentDate}&vote_count.gte=100&with_original_language=en`)
-                ]);
-
-                const moviesData = await moviesResponse.json();
-                const seriesData = await seriesResponse.json();
-
-                const movies = moviesData.results.map(item => ({
-                    ...item,
-                    media_type: 'movie'
-                }));
-
-                const series = seriesData.results.map(item => ({
-                    ...item,
-                    media_type: 'tv'
-                }));
-
-                const combined = [...movies, ...series];
-                const shuffled = combined.sort(() => Math.random() - 0.5);
+                // Mock data for demo - replace with your actual API calls
+                const mockData = [
+                    {
+                        id: 1,
+                        title: "Sample Movie 1",
+                        media_type: "movie",
+                        poster_path: "/sample1.jpg",
+                        release_date: "2024-01-01",
+                        overview: "This is a sample movie description for demonstration purposes.",
+                        vote_average: 8.5,
+                        vote_count: 1234
+                    },
+                    {
+                        id: 2,
+                        name: "Sample TV Show",
+                        media_type: "tv",
+                        poster_path: "/sample2.jpg",
+                        first_air_date: "2024-02-01",
+                        overview: "This is a sample TV show description for demonstration purposes.",
+                        vote_average: 7.8,
+                        vote_count: 987
+                    },
+                    {
+                        id: 3,
+                        title: "Another Movie",
+                        media_type: "movie",
+                        poster_path: "/sample3.jpg",
+                        release_date: "2024-03-01",
+                        overview: "Another sample movie with a longer description to show how the text wraps and displays in the card.",
+                        vote_average: 9.2,
+                        vote_count: 2468
+                    }
+                ];
                 
-                setDiscoveryData(shuffled);
+                setDiscoveryData(mockData);
             } catch (error) {
                 console.error('Error fetching discovery data:', error);
             } finally {
@@ -95,7 +114,7 @@ export default function Discover() {
         setTimeout(() => {
             setCurrentIndex(prev => prev + 1);
             setIsAnimating(false);
-        }, 250);
+        }, 300);
     }, [currentIndex, discoveryData.length, isAnimating]);
 
     const handleReset = () => {
@@ -108,11 +127,11 @@ export default function Discover() {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading...</p>
+                </div>
+            </div>
         );
     }
 
@@ -126,16 +145,22 @@ export default function Discover() {
                     <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                         All Done!
                     </h1>
-                    <p className="text-gray-400 mb-8 text-lg">You've discovered all available content.<span  className='text-green-500'>Refresh to discover more</span></p>
-                  
-                  
+                    <p className="text-gray-400 mb-8 text-lg">
+                        You've discovered all available content.
+                        <span className='text-green-500'> Refresh to discover more</span>
+                    </p>
                 </div>
             </div>
         );
     }
 
+    const formatRuntime = (minutes) => {
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+    };
 
-      // Enhanced Modal component for movie details
+    // Enhanced Modal component for movie details
     const MovieModal = ({ open, onClose, movie }) => {
         if (!open || !movie) return null;
 
@@ -209,20 +234,6 @@ export default function Discover() {
                                     <span className="px-2 py-1 bg-blue-600 rounded-full text-xs font-medium">
                                         {media_type === "tv" ? "TV Series" : "Movie"}
                                     </span>
-                                    {/* Runtime for movies */}
-                                    {media_type === 'movie' && details.runtime && (
-                                        <span className="flex items-center">
-                                            <Clock className="w-4 h-4 mr-1" />
-                                            {formatRuntime(details.runtime)}
-                                        </span>
-                                    )}
-                                    {/* Seasons for TV shows */}
-                                    {media_type === 'tv' && details.number_of_seasons && (
-                                        <span className="flex items-center">
-                                            <Tv className="w-4 h-4 mr-1" />
-                                            {details.number_of_seasons} Season{details.number_of_seasons !== 1 ? 's' : ''}
-                                        </span>
-                                    )}
                                     {vote_average > 0 && (
                                         <span className="flex items-center bg-yellow-500 text-black px-2 py-1 rounded-full text-xs font-semibold">
                                             <Star className="w-3 h-3 mr-1" />
@@ -236,120 +247,6 @@ export default function Discover() {
 
                     {/* Content area */}
                     <div className="p-6 overflow-y-auto max-h-[calc(90vh-16rem)]">
-                        {/* Additional Info Section */}
-                        {details && Object.keys(details).length > 0 && (
-                            <div className="mb-6 bg-gray-800 rounded-xl p-6">
-                                <h3 className="text-xl font-semibold text-white mb-4">Details</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                                    {media_type === 'movie' && details.runtime && (
-                                        <div>
-                                            <span className="text-gray-400">Runtime:</span>
-                                            <p className="text-white font-medium">{formatRuntime(details.runtime)}</p>
-                                        </div>
-                                    )}
-                                    {media_type === 'tv' && details.number_of_seasons && (
-                                        <div>
-                                            <span className="text-gray-400">Seasons:</span>
-                                            <p className="text-white font-medium">{details.number_of_seasons}</p>
-                                        </div>
-                                    )}
-                                    {media_type === 'tv' && details.episode_run_time && details.episode_run_time.length > 0 && (
-                                        <div>
-                                            <span className="text-gray-400">Episode Length:</span>
-                                            <p className="text-white font-medium">{details.episode_run_time[0]} min</p>
-                                        </div>
-                                    )}
-                                    {details.status && (
-                                        <div>
-                                            <span className="text-gray-400">Status:</span>
-                                            <p className="text-white font-medium">{details.status}</p>
-                                        </div>
-                                    )}
-                                    {details.genres && details.genres.length > 0 && (
-                                        <div className="col-span-2 md:col-span-3">
-                                            <span className="text-gray-400">Genres:</span>
-                                            <p className="text-white font-medium">
-                                                {details.genres.map(genre => genre.name).join(', ')}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Trailers Section */}
-                        {loadingTrailers ? (
-                            <div className="mb-6 bg-gray-800 rounded-xl p-6">
-                                <div className="animate-pulse">
-                                    <div className="h-4 bg-gray-700 rounded w-24 mb-4"></div>
-                                    <div className="bg-gray-700 rounded-lg h-48"></div>
-                                </div>
-                            </div>
-                        ) : trailers && trailers.length > 0 ? (
-                            <div className="mb-6 bg-gray-800 rounded-xl p-6">
-                                <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
-                                    <Play className="w-5 h-5 mr-2 text-red-500" />
-                                    Trailers & Videos
-                                </h3>
-                                
-                                {/* Main video player */}
-                                <div className="mb-4">
-                                    <div className="relative bg-black rounded-lg overflow-hidden">
-                                        <iframe
-                                            width="100%"
-                                            height="300"
-                                            src={`https://www.youtube.com/embed/${trailers[activeTrailer]?.key}?rel=0`}
-                                            title={trailers[activeTrailer]?.name}
-                                            frameBorder="0"
-                                            allowFullScreen
-                                            className="w-full"
-                                        ></iframe>
-                                    </div>
-                                    <div className="mt-2 px-2">
-                                        <h4 className="text-white font-medium">{trailers[activeTrailer]?.name}</h4>
-                                        <p className="text-gray-400 text-sm">{trailers[activeTrailer]?.type}</p>
-                                    </div>
-                                </div>
-
-                                {/* Video thumbnails */}
-                                {trailers.length > 1 && (
-                                    <div className="space-y-2">
-                                        <h4 className="text-white text-sm font-medium">More Videos</h4>
-                                        <div className="flex space-x-3 overflow-x-auto pb-2">
-                                            {trailers.map((trailer, index) => (
-                                                <button
-                                                    key={trailer.key}
-                                                    onClick={() => setActiveTrailer(index)}
-                                                    className={`flex-shrink-0 group relative ${
-                                                        index === activeTrailer ? 'ring-2 ring-red-500' : ''
-                                                    }`}
-                                                >
-                                                    <div className="w-32 h-18 bg-gray-700 rounded-lg overflow-hidden relative">
-                                                        <img
-                                                            src={`https://img.youtube.com/vi/${trailer.key}/mqdefault.jpg`}
-                                                            alt={trailer.name}
-                                                            className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                                                        />
-                                                        <div className="absolute inset-0 flex items-center justify-center">
-                                                            <Play className="w-6 h-6 text-white opacity-80" />
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-xs text-gray-300 mt-1 w-32 truncate">
-                                                        {trailer.name}
-                                                    </p>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="mb-6 bg-gray-800 rounded-xl p-6 text-center">
-                                <Play className="w-12 h-12 text-gray-600 mx-auto mb-2" />
-                                <p className="text-gray-400">No trailers available</p>
-                            </div>
-                        )}
-
                         {/* Overview Section */}
                         <div className="mb-6">
                             <h3 className="text-xl font-semibold text-white mb-3">Overview</h3>
@@ -396,7 +293,6 @@ export default function Discover() {
         );
     };
 
-
     return (
         <div className="min-h-screen py-8 bg-gradient-to-br from-gray-900 via-black to-gray-900 flex flex-col items-center justify-center px-4 overflow-hidden">
             {/* Header */}
@@ -416,13 +312,20 @@ export default function Discover() {
 
             {/* Card Stack */}
             <div className="relative w-full max-w-sm mx-auto mb-8">
-                <TinderSwipeStack
+                <FramerSwipeStack
                     data={discoveryData}
                     currentIndex={currentIndex}
                     onSwipe={handleSwipe}
                     isAnimating={isAnimating}
                     img_300={img_300}
                     imagenotfound={imagenotfound}
+                    onShowDetails={(movie) => {
+                        setSelectedMovie(movie);
+                        setModalOpen(true);
+                        fetchMovieDetails(movie.id, movie.media_type);
+                        fetchTrailers(movie.id, movie.media_type);
+                        setActiveTrailer(0);
+                    }}
                 />
             </div>
 
@@ -450,7 +353,12 @@ export default function Discover() {
                 />
             </div>
 
-          
+            {/* Modal */}
+            <MovieModal 
+                open={modalOpen} 
+                onClose={handleCloseModal} 
+                movie={selectedMovie} 
+            />
 
             {/* Footer */}
             <footer className="text-gray-500 text-sm">
@@ -460,458 +368,229 @@ export default function Discover() {
     );
 }
 
-// Ultra smooth swipe stack with optimized performance
-function TinderSwipeStack({ data, currentIndex, onSwipe, isAnimating, img_300, imagenotfound }) {
-    const [gesture, setGesture] = useState({
-        x: 0,
-        y: 0,
-        rotation: 0,
-        scale: 1,
-        opacity: 1,
-        isDragging: false,
-        velocity: { x: 0, y: 0 },
-        lastPosition: { x: 0, y: 0 },
-        lastTime: 0
-    });
-
-    const cardRef = useRef(null);
-    const rafRef = useRef(null);
-    const velocityTrackerRef = useRef([]);
-    const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
-
-    // Memoized transform calculations for better performance
-    const transformStyle = useMemo(() => {
-        const { x, y, rotation, scale, opacity } = gesture;
-        return {
-            transform: `translate3d(${x}px, ${y}px, 0) rotate(${rotation}deg) scale(${scale})`,
-            opacity: opacity,
-            willChange: gesture.isDragging ? 'transform, opacity' : 'auto',
-            transition: gesture.isDragging ? 'none' : 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-        };
-    }, [gesture]);
-
-    // Enhanced physics calculations
-    const calculatePhysics = useCallback((deltaX, deltaY, velocity = { x: 0, y: 0 }) => {
-        const maxRotation = 25;
-        const rotationMultiplier = 0.1;
-        const resistance = 0.8;
-        
-        // Smooth rotation with velocity influence
-        const rotation = Math.max(-maxRotation, Math.min(maxRotation, 
-            deltaX * rotationMultiplier + velocity.x * 0.02
-        ));
-        
-        // Subtle scaling with smoother curves
-        const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
-        const scale = Math.max(0.95, 1 - (distance * 0.00015));
-        
-        // Opacity with velocity consideration
-        const opacity = Math.max(0.7, 1 - (Math.abs(deltaX) * 0.0012));
-        
-        // Add slight Y movement for natural feel
-        const adjustedY = deltaY * resistance + (Math.abs(deltaX) * 0.1);
-        
-        return { 
-            x: deltaX, 
-            y: adjustedY, 
-            rotation, 
-            scale, 
-            opacity 
-        };
-    }, []);
-
-    // Optimized velocity tracking
-    const updateVelocity = useCallback((x, y) => {
-        const now = performance.now();
-        const tracker = velocityTrackerRef.current;
-        
-        // Keep only recent samples for smooth velocity calculation
-        tracker.push({ x, y, time: now });
-        if (tracker.length > 5) tracker.shift();
-        
-        if (tracker.length >= 2) {
-            const recent = tracker[tracker.length - 1];
-            const previous = tracker[tracker.length - 2];
-            const timeDelta = recent.time - previous.time;
-            
-            if (timeDelta > 0) {
-                return {
-                    x: (recent.x - previous.x) / timeDelta,
-                    y: (recent.y - previous.y) / timeDelta
-                };
-            }
-        }
-        
-        return { x: 0, y: 0 };
-    }, []);
-
-    // Enhanced pointer event handlers
-    const handlePointerStart = useCallback((e) => {
-        if (isAnimating) return;
-        
-        e.preventDefault();
-        const pointer = e.touches ? e.touches[0] : e;
-        const { clientX, clientY } = pointer;
-        const now = performance.now();
-        
-        touchStartRef.current = { x: clientX, y: clientY, time: now };
-        velocityTrackerRef.current = [{ x: clientX, y: clientY, time: now }];
-        
-        setGesture(prev => ({
-            ...prev,
-            isDragging: true,
-            lastPosition: { x: clientX, y: clientY },
-            lastTime: now
-        }));
-
-        // Prevent default behaviors
-        document.body.style.touchAction = 'none';
-        document.body.style.userSelect = 'none';
-        
-        // Add slight haptic feedback on mobile
-        if (navigator.vibrate) {
-            navigator.vibrate(1);
-        }
-    }, [isAnimating]);
-
-    const handlePointerMove = useCallback((e) => {
-        if (!gesture.isDragging) return;
-        
-        e.preventDefault();
-        const pointer = e.touches ? e.touches[0] : e;
-        const { clientX, clientY } = pointer;
-        
-        const deltaX = clientX - touchStartRef.current.x;
-        const deltaY = clientY - touchStartRef.current.y;
-        
-        const velocity = updateVelocity(clientX, clientY);
-        const physics = calculatePhysics(deltaX, deltaY, velocity);
-        
-        // Use RAF for smooth updates
-        if (rafRef.current) {
-            cancelAnimationFrame(rafRef.current);
-        }
-        
-        rafRef.current = requestAnimationFrame(() => {
-            setGesture(prev => ({
-                ...prev,
-                ...physics,
-                velocity,
-                lastPosition: { x: clientX, y: clientY },
-                lastTime: performance.now()
-            }));
-        });
-    }, [gesture.isDragging, updateVelocity, calculatePhysics]);
-
-    const handlePointerEnd = useCallback(() => {
-        if (!gesture.isDragging) return;
-        
-        const { x, velocity } = gesture;
-        const swipeThreshold = 50;
-        const velocityThreshold = 0.3;
-        
-        // Improved swipe detection with momentum
-        const hasEnoughDistance = Math.abs(x) > swipeThreshold;
-        const hasEnoughVelocity = Math.abs(velocity.x) > velocityThreshold;
-        const shouldSwipe = hasEnoughDistance || hasEnoughVelocity;
-        
-        // Reset body styles
-        document.body.style.touchAction = '';
-        document.body.style.userSelect = '';
-        
-        if (shouldSwipe) {
-            const direction = (x > 0 || velocity.x > 0) ? 'right' : 'left';
-            const momentumMultiplier = Math.max(1.5, Math.abs(velocity.x) * 3);
-            
-            // Enhanced exit animation
-            const exitX = direction === 'right' 
-                ? window.innerWidth * momentumMultiplier 
-                : -window.innerWidth * momentumMultiplier;
-            
-            const exitRotation = direction === 'right' ? 30 : -30;
-            const exitY = gesture.y + (Math.random() - 0.5) * 100;
-            
-            setGesture(prev => ({
-                ...prev,
-                x: exitX,
-                y: exitY,
-                rotation: exitRotation,
-                scale: 0.8,
-                opacity: 0,
-                isDragging: false
-            }));
-            
-            // Trigger swipe callback with slight delay for animation
-            setTimeout(() => onSwipe(direction), 100);
-        } else {
-            // Smooth return animation
-            setGesture(prev => ({
-                ...prev,
-                x: 0,
-                y: 0,
-                rotation: 0,
-                scale: 1,
-                opacity: 1,
-                isDragging: false,
-                velocity: { x: 0, y: 0 }
-            }));
-        }
-        
-        // Clear velocity tracker
-        velocityTrackerRef.current = [];
-    }, [gesture, onSwipe]);
-
-    // Reset gesture on card change
-    useEffect(() => {
-        setGesture({
-            x: 0,
-            y: 0,
-            rotation: 0,
-            scale: 1,
-            opacity: 1,
-            isDragging: false,
-            velocity: { x: 0, y: 0 },
-            lastPosition: { x: 0, y: 0 },
-            lastTime: 0
-        });
-        velocityTrackerRef.current = [];
-    }, [currentIndex]);
-
-    // Global event listeners
-    useEffect(() => {
-        if (!gesture.isDragging) return;
-
-        const handleGlobalMove = (e) => handlePointerMove(e);
-        const handleGlobalEnd = () => handlePointerEnd();
-
-        // Add passive: false for better performance on touch devices
-        const options = { passive: false };
-        
-        document.addEventListener('mousemove', handleGlobalMove, options);
-        document.addEventListener('mouseup', handleGlobalEnd);
-        document.addEventListener('touchmove', handleGlobalMove, options);
-        document.addEventListener('touchend', handleGlobalEnd);
-        document.addEventListener('touchcancel', handleGlobalEnd);
-
-        return () => {
-            document.removeEventListener('mousemove', handleGlobalMove);
-            document.removeEventListener('mouseup', handleGlobalEnd);
-            document.removeEventListener('touchmove', handleGlobalMove);
-            document.removeEventListener('touchend', handleGlobalEnd);
-            document.removeEventListener('touchcancel', handleGlobalEnd);
-            
-            // Cleanup RAF
-            if (rafRef.current) {
-                cancelAnimationFrame(rafRef.current);
-            }
-        };
-    }, [gesture.isDragging, handlePointerMove, handlePointerEnd]);
-
+// Framer Motion swipe stack component
+function FramerSwipeStack({ data, currentIndex, onSwipe, isAnimating, img_300, imagenotfound, onShowDetails }) {
     const currentItem = data[currentIndex];
     const nextItem = data[currentIndex + 1];
     const thirdItem = data[currentIndex + 2];
 
     if (!currentItem) return null;
 
-    const { name, title, poster_path, first_air_date, release_date, media_type, vote_average, vote_count, overview } = currentItem;
-
-    // Smooth indicator calculations
-    const likeOpacity = Math.max(0, Math.min(1, gesture.x / 80));
-    const passOpacity = Math.max(0, Math.min(1, -gesture.x / 80));
-    const indicatorScale = 0.9 + (Math.max(likeOpacity, passOpacity) * 0.3);
-
     return (
         <div className="relative" style={{ height: '650px' }}>
-            {/* Background cards with smooth transitions - NO SNAP BACK */}
-            {thirdItem && (
-                <div 
-                    className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl"
-                    style={{ 
-                        zIndex: 1,
-                        opacity: 0.3,
-                        transform: 'scale(0.90) rotate(1deg)',
-                        transition: 'opacity 0.6s ease-out, transform 0.6s ease-out',
-                        transformOrigin: 'center bottom'
-                    }}
-                >
-                    <div className="w-full h-full rounded-3xl overflow-hidden">
-                        <img
-                            src={thirdItem.poster_path ? `${img_300}/${thirdItem.poster_path}` : imagenotfound}
-                            className="w-full h-2/3 object-cover"
-                            alt="Background card"
-                            loading="lazy"
-                        />
-                    </div>
-                </div>
-            )}
-
-            {nextItem && (
-                <div 
-                    className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl"
-                    style={{ 
-                        zIndex: 2,
-                        opacity: gesture.isDragging ? Math.min(1, 0.7 + (Math.abs(gesture.x) / 400)) : 0.7,
-                        transform: gesture.isDragging 
-                            ? `scale(${Math.min(1, 0.95 + (Math.abs(gesture.x) / 800))}) translateY(${-Math.abs(gesture.x) / 30}px)`
-                            : 'scale(0.95)',
-                        transition: gesture.isDragging ? 'none' : 'all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                        transformOrigin: 'center bottom'
-                    }}
-                >
-                    <div className="w-full h-full rounded-3xl overflow-hidden">
-                        <img
-                            src={nextItem.poster_path ? `${img_300}/${nextItem.poster_path}` : imagenotfound}
-                            className="w-full h-2/3 object-cover"
-                            alt="Next card"
-                            loading="lazy"
-                        />
-                        <div className="p-4 h-1/3 bg-gray-800 flex flex-col justify-center">
-                            <h3 className="text-white font-semibold text-lg truncate">
-                                {nextItem.title || nextItem.name}
-                            </h3>
+            {/* Background cards */}
+            <AnimatePresence>
+                {thirdItem && (
+                    <motion.div 
+                        key={`third-${currentIndex + 2}`}
+                        initial={{ opacity: 0, scale: 0.85, rotate: 2 }}
+                        animate={{ opacity: 0.3, scale: 0.90, rotate: 1 }}
+                        exit={{ opacity: 0, scale: 0.85 }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl"
+                        style={{ zIndex: 1 }}
+                    >
+                        <div className="w-full h-full rounded-3xl overflow-hidden">
+                            <img
+                                src={thirdItem.poster_path ? `${img_300}/${thirdItem.poster_path}` : imagenotfound}
+                                className="w-full h-2/3 object-cover"
+                                alt="Background card"
+                                loading="lazy"
+                            />
                         </div>
-                    </div>
-                </div>
-            )}
+                    </motion.div>
+                )}
+
+                {nextItem && (
+                    <motion.div 
+                        key={`next-${currentIndex + 1}`}
+                        initial={{ opacity: 0.5, scale: 0.90, y: 20 }}
+                        animate={{ opacity: 0.7, scale: 0.95, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.90, y: 20 }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className="absolute inset-0 bg-gray-800 rounded-3xl shadow-xl"
+                        style={{ zIndex: 2 }}
+                    >
+                        <div className="w-full h-full rounded-3xl overflow-hidden">
+                            <img
+                                src={nextItem.poster_path ? `${img_300}/${nextItem.poster_path}` : imagenotfound}
+                                className="w-full h-2/3 object-cover"
+                                alt="Next card"
+                                loading="lazy"
+                            />
+                            <div className="p-4 h-1/3 bg-gray-800 flex flex-col justify-center">
+                                <h3 className="text-white font-semibold text-lg truncate">
+                                    {nextItem.title || nextItem.name}
+                                </h3>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Main interactive card */}
-            <div
-                ref={cardRef}
-                className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl shadow-2xl overflow-hidden select-none border border-gray-700"
-                style={{
-                    ...transformStyle,
-                    zIndex: 10,
-                    cursor: gesture.isDragging ? 'grabbing' : 'grab',
-                    touchAction: 'none',
-                    backfaceVisibility: 'hidden',
-                    WebkitBackfaceVisibility: 'hidden',
-                    transform3d: true
-                }}
-                onMouseDown={handlePointerStart}
-                onTouchStart={handlePointerStart}
-            >
-                {/* Image Section */}
-                <div className="relative h-2/3 overflow-hidden">
-                    <img
-                        src={poster_path ? `${img_300}/${poster_path}` : imagenotfound}
-                        className="w-full h-full object-cover"
-                        alt={title || name || "Movie poster"}
-                        draggable={false}
-                        loading="eager"
-                        style={{ 
-                            pointerEvents: 'none',
-                            userSelect: 'none',
-                            WebkitUserSelect: 'none'
-                        }}
-                    />
-                    
-                    {/* Gradient overlays */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
-                     
-                    {/* Media type badge */}
-                    <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md text-white text-sm px-4 py-2 rounded-full border border-white/20 font-medium">
-                        {media_type === "tv" ? "📺 TV Series" : "🎬 Movie"}
-                    </div>
-
-                   
-
-                    {/* Rating badge */}
-                    {vote_average > 0 && (
-                        <div className="absolute top-4 right-4 flex items-center bg-yellow-400/95 backdrop-blur-md text-black text-sm px-4 py-2 rounded-full font-bold border border-yellow-300">
-                            <Star className="mr-1 w-4 h-4 fill-current" />
-                            {vote_average.toFixed(1)}
-                        </div>
-
-                    
-                    )}
-                    
-                    {/* Ultra smooth swipe indicators */}
-                    <div
-                        className="absolute left-8 top-1/2 transform -translate-y-1/2 rotate-12 pointer-events-none"
-                        style={{ 
-                            opacity: likeOpacity,
-                            transform: `translateY(-50%) rotate(12deg) scale(${indicatorScale})`,
-                            transition: gesture.isDragging ? 'none' : 'all 0.2s ease-out'
-                        }}
-                    >
-                        <div className="border-4 border-green-400 text-green-400 px-8 py-4 rounded-3xl font-black text-3xl bg-black/50 backdrop-blur-sm shadow-2xl">
-                            LIKE
-                        </div>
-                    </div>
-                    
-                    <div
-                        className="absolute right-8 top-1/2 transform -translate-y-1/2 -rotate-12 pointer-events-none"
-                        style={{ 
-                            opacity: passOpacity,
-                            transform: `translateY(-50%) rotate(-12deg) scale(${indicatorScale})`,
-                            transition: gesture.isDragging ? 'none' : 'all 0.2s ease-out'
-                        }}
-                    >
-                        <div className="border-4 border-red-400 text-red-400 px-8 py-4 rounded-3xl font-black text-3xl bg-black/50 backdrop-blur-sm shadow-2xl">
-                            PASS
-                        </div>
-                    </div>
-                </div>
-                
-                {/* Content Section */}
-                <div className="p-6 h-1/3 flex flex-col bg-gradient-to-b from-gray-800 to-gray-900 border-t border-gray-700">
-                    <h2 className="text-2xl font-bold text-white mb-3 line-clamp-1">
-                        {title || name}
-                    </h2>
-                    <div className="flex items-center text-gray-400 mb-3 text-sm">
-                        <span className="bg-gray-700 px-3 py-1 rounded-full mr-3">
-                            {first_air_date || release_date || "Unknown"}
-                        </span>
-                        {vote_count && (
-                            <span className="bg-gray-700 px-3 py-1 rounded-full">
-                                {vote_count.toLocaleString()} votes
-                            </span>
-                        )}
-                    </div>
-                    <p className="text-gray-300 text-sm flex-1 leading-relaxed line-clamp-3">
-                        {overview || "No overview available."}
-                    </p>
-                     <button
-                        onClick={() => {
-                            setSelectedMovie(currentItem);
-                            setModalOpen(true);
-                            fetchMovieDetails(currentItem.id, currentItem.media_type);
-                            fetchTrailers(currentItem.id, currentItem.media_type);
-                            setActiveTrailer(0);
-                        }}
-                        className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md text-white p-2 rounded-full hover:bg-black/90 transition-colors"
-                        aria-label="Show details"
-                    >
-                        <Info className="w-5 h-5" />
-                    </button>
-                </div>
-            </div>
+            <SwipeableCard
+                key={`main-${currentIndex}`}
+                item={currentItem}
+                onSwipe={onSwipe}
+                img_300={img_300}
+                imagenotfound={imagenotfound}
+                onShowDetails={onShowDetails}
+                isAnimating={isAnimating}
+            />
         </div>
+    );
+}
+
+// Individual swipeable card component
+function SwipeableCard({ item, onSwipe, img_300, imagenotfound, onShowDetails, isAnimating }) {
+    const x = useMotionValue(0);
+    const y = useMotionValue(0);
+    
+    // Transform values for smooth animations
+    const rotate = useTransform(x, [-300, 0, 300], [-30, 0, 30]);
+    const opacity = useTransform(x, [-300, -50, 0, 50, 300], [0, 1, 1, 1, 0]);
+    const scale = useTransform(x, [-300, 0, 300], [0.8, 1, 0.8]);
+    
+    // Indicator opacities
+    const likeOpacity = useTransform(x, [0, 150], [0, 1]);
+    const passOpacity = useTransform(x, [-150, 0], [1, 0]);
+    
+    const handleDragEnd = (event, info) => {
+        const swipeThreshold = 100;
+        const velocityThreshold = 500;
+        
+        const shouldSwipe = 
+            Math.abs(info.offset.x) > swipeThreshold || 
+            Math.abs(info.velocity.x) > velocityThreshold;
+        
+        if (shouldSwipe && !isAnimating) {
+            const direction = info.offset.x > 0 ? 'right' : 'left';
+            onSwipe(direction);
+        }
+    };
+
+    const { name, title, poster_path, first_air_date, release_date, media_type, vote_average, vote_count, overview } = item;
+
+    return (
+        <motion.div
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.7}
+            onDragEnd={handleDragEnd}
+            style={{ 
+                x, 
+                y, 
+                rotate, 
+                opacity, 
+                scale,
+                zIndex: 10 
+            }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.8, y: 50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ 
+                opacity: 0, 
+                scale: 0.8, 
+                transition: { duration: 0.2 } 
+            }}
+            transition={{ 
+                type: "spring", 
+                stiffness: 300, 
+                damping: 30 
+            }}
+            className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl shadow-2xl overflow-hidden select-none border border-gray-700 cursor-grab active:cursor-grabbing"
+        >
+            {/* Image Section */}
+            <div className="relative h-2/3 overflow-hidden">
+                <img
+                    src={poster_path ? `${img_300}/${poster_path}` : imagenotfound}
+                    className="w-full h-full object-cover"
+                    alt={title || name || "Movie poster"}
+                    draggable={false}
+                    loading="eager"
+                />
+                
+                {/* Gradient overlays */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+                 
+                {/* Media type badge */}
+                <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-md text-white text-sm px-4 py-2 rounded-full border border-white/20 font-medium">
+                    {media_type === "tv" ? "📺 TV Series" : "🎬 Movie"}
+                </div>
+
+                {/* Rating badge */}
+                {vote_average > 0 && (
+                    <div className="absolute top-4 right-4 flex items-center bg-yellow-400/95 backdrop-blur-md text-black text-sm px-4 py-2 rounded-full font-bold border border-yellow-300">
+                        <Star className="mr-1 w-4 h-4 fill-current" />
+                        {vote_average.toFixed(1)}
+                    </div>
+                )}
+                
+                {/* Swipe indicators with Framer Motion */}
+                <motion.div
+                    style={{ opacity: likeOpacity }}
+                    className="absolute left-8 top-1/2 transform -translate-y-1/2 rotate-12 pointer-events-none"
+                >
+                    <div className="border-4 border-green-400 text-green-400 px-8 py-4 rounded-3xl font-black text-3xl bg-black/50 backdrop-blur-sm shadow-2xl">
+                        LIKE
+                    </div>
+                </motion.div>
+                
+                <motion.div
+                    style={{ opacity: passOpacity }}
+                    className="absolute right-8 top-1/2 transform -translate-y-1/2 -rotate-12 pointer-events-none"
+                >
+                    <div className="border-4 border-red-400 text-red-400 px-8 py-4 rounded-3xl font-black text-3xl bg-black/50 backdrop-blur-sm shadow-2xl">
+                        PASS
+                    </div>
+                </motion.div>
+            </div>
+            
+            {/* Content Section */}
+            <div className="p-6 h-1/3 flex flex-col bg-gradient-to-b from-gray-800 to-gray-900 border-t border-gray-700">
+                <h2 className="text-2xl font-bold text-white mb-3 line-clamp-1">
+                    {title || name}
+                </h2>
+                <div className="flex items-center text-gray-400 mb-3 text-sm">
+                    <span className="bg-gray-700 px-3 py-1 rounded-full mr-3">
+                        {first_air_date || release_date || "Unknown"}
+                    </span>
+                    {vote_count && (
+                        <span className="bg-gray-700 px-3 py-1 rounded-full">
+                            {vote_count.toLocaleString()} votes
+                        </span>
+                    )}
+                </div>
+                <p className="text-gray-300 text-sm flex-1 leading-relaxed line-clamp-3">
+                    {overview || "No overview available."}
+                </p>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onShowDetails(item);
+                    }}
+                    className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md text-white p-2 rounded-full hover:bg-black/90 transition-colors"
+                    aria-label="Show details"
+                >
+                    <Info className="w-5 h-5" />
+                </button>
+            </div>
+        </motion.div>
     );
 }
 
 // Action Button Component
 function ActionButton({ onClick, disabled, className, icon, small }) {
     return (
-        <button
+        <motion.button
             onClick={onClick}
             disabled={disabled}
-            className={`${className} ${small ? 'p-3' : 'p-5'} rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 hover:shadow-2xl active:scale-95 font-semibold text-white transform-gpu`}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            className={`${className} ${small ? 'p-3' : 'p-5'} rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-white transform-gpu shadow-2xl`}
         >
             {icon}
-        </button>
-    );
-}
-
-// Stat Badge Component
-function StatBadge({ icon, label, count, color }) {
-    return (
-        <div className="flex items-center gap-2 bg-gray-800/50 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-700">
-            <span className="text-lg">{icon}</span>
-            <div className="text-center">
-                <div className={`${color} font-bold text-lg`}>{count}</div>
-                <div className="text-gray-500 text-xs">{label}</div>
-            </div>
-        </div>
+        </motion.button>
     );
 }
