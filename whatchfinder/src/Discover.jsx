@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, useMotionValue, useTransform, AnimatePresence, animate } from 'framer-motion';
 import { Star, Heart, X, RotateCcw, Info, Calendar, Clock, Tv, Play, Users } from 'lucide-react';
 import { useWatchlist } from './Watchlistcontext';
 
@@ -295,6 +295,12 @@ export default function Discover() {
                         {currentIndex + 1} of {discoveryData.length}
                     </span>
                 </div>
+                <div className="w-64 h-2 bg-gray-800 border border-gray-700 rounded-full mt-3 mx-auto overflow-hidden">
+                    <div
+                        className="h-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600"
+                        style={{ width: `${discoveryData.length ? Math.min(100, ((currentIndex + 1) / discoveryData.length) * 100) : 0}%` }}
+                    />
+                </div>
             </div>
 
             {/* Card Stack */}
@@ -433,6 +439,7 @@ function FramerSwipeStack({ data, currentIndex, onSwipe, isAnimating, img_300, i
 function SwipeableCard({ item, onSwipe, img_300, imagenotfound, onShowDetails, isAnimating }) {
     const x = useMotionValue(0);
     const y = useMotionValue(0);
+    const dismissingRef = useRef(false);
     
     // Transform values for smooth animations
     const rotate = useTransform(x, [-300, 0, 300], [-30, 0, 30]);
@@ -444,16 +451,28 @@ function SwipeableCard({ item, onSwipe, img_300, imagenotfound, onShowDetails, i
     const passOpacity = useTransform(x, [-150, 0], [1, 0]);
     
     const handleDragEnd = (event, info) => {
-        const swipeThreshold = 100;
-        const velocityThreshold = 500;
-        
-        const shouldSwipe = 
-            Math.abs(info.offset.x) > swipeThreshold || 
-            Math.abs(info.velocity.x) > velocityThreshold;
-        
-        if (shouldSwipe && !isAnimating) {
-            const direction = info.offset.x > 0 ? 'right' : 'left';
-            onSwipe(direction);
+        const swipeThreshold = 120;
+        const velocityThreshold = 600;
+
+        const deltaX = info.offset.x;
+        const velX = info.velocity.x;
+
+        const shouldSwipe = Math.abs(deltaX) > swipeThreshold || Math.abs(velX) > velocityThreshold;
+
+        if (shouldSwipe && !isAnimating && !dismissingRef.current) {
+            dismissingRef.current = true;
+            const direction = deltaX > 0 ? 'right' : 'left';
+            const to = (direction === 'right' ? window.innerWidth : -window.innerWidth) * 1.1;
+
+            const controls = animate(x, to, { type: 'spring', stiffness: 260, damping: 30 });
+            controls.then(() => {
+                onSwipe(direction);
+                dismissingRef.current = false;
+                x.set(0);
+            });
+        } else {
+            // Snap back if not past threshold
+            animate(x, 0, { type: 'spring', stiffness: 500, damping: 40 });
         }
     };
 
@@ -462,8 +481,8 @@ function SwipeableCard({ item, onSwipe, img_300, imagenotfound, onShowDetails, i
     return (
         <motion.div
             drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.7}
+            dragElastic={0.25}
+            dragMomentum={true}
             onDragEnd={handleDragEnd}
             style={{ 
                 x, 
@@ -471,20 +490,20 @@ function SwipeableCard({ item, onSwipe, img_300, imagenotfound, onShowDetails, i
                 rotate, 
                 opacity, 
                 scale,
-                zIndex: 10 
+                zIndex: 10,
+                touchAction: 'pan-y'
             }}
-            whileTap={{ scale: 0.95 }}
-            initial={{ opacity: 0, scale: 0.8, y: 50 }}
+            whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0, scale: 0.95, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ 
-                opacity: 0, 
-                scale: 0.8, 
-                transition: { duration: 0.2 } 
+                opacity: 0,
+                transition: { duration: 0.25 } 
             }}
             transition={{ 
                 type: "spring", 
                 stiffness: 300, 
-                damping: 30 
+                damping: 28 
             }}
             className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl shadow-2xl overflow-hidden select-none border border-gray-700 cursor-grab active:cursor-grabbing"
         >
