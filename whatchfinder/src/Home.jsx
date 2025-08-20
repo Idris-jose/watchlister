@@ -1,569 +1,571 @@
-import { useState } from 'react'
-import { Search as Searches, Star, Plus, Info, X, Play, Calendar, Clock, Users, Clapperboard, Tv } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import logo from './assets/logo.png'
-import imagenotfound from './assets/imagenotfound.png'
-import { useWatchlist } from './Watchlistcontext.jsx';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Star, Heart, X, Search, Grid, List, Calendar, Clock, Tv, Play, Users, TrendingUp, Award, Eye } from 'lucide-react';
 
-function Home1() {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedMovie, setSelectedMovie] = useState(null);
-  const [activeTrailer, setActiveTrailer] = useState(0);
-  
-  const {
-    // Search functionality
-    searchText,
-    searchResults,
-    updateSearchText,
-    isSearching,
+import { useWatchlist } from './Watchlistcontext';
+
+export default function SearchPage() {
+    const [searchResults, setSearchResults] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+            const [selectedMovie, setSelectedMovie] = useState(null);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [likedItems, setLikedItems] = useState(new Set());
+    const [hasSearched, setHasSearched] = useState(false);
+    const [searchTimeout, setSearchTimeout] = useState(null);
+
+    const { addToWatchlist, fetchMovieDetails, fetchTrailers } = useWatchlist();
     
-    // Movie details
-    movieDetails,
-    series,
-    getMovieDetails,
-    fetchMovieDetails,
+    const API_KEY = "56185e1e9a25474a6cf2f5748dfb6ebf";
+    const img_300 = "https://image.tmdb.org/t/p/w300";
+    const img_500 = "https://image.tmdb.org/t/p/w500";
+    const imagenotfound = "https://via.placeholder.com/300x450/374151/9CA3AF?text=No+Image";
+
     
-    // Trailers
-    trailers,
-    fetchTrailers,
-    loadingTrailers,
+    const performSearch = useCallback(async (query, currentPage = 1, reset = false) => {
+        if (!query.trim()) {
+            setSearchResults([]);
+            setHasSearched(false);
+            setLoading(false);
+            return;
+        }
+
+        try {
+            if (reset) {
+                setLoading(true);
+                setPage(1);
+                currentPage = 1;
+            }
+
+            const baseParams = `api_key=${API_KEY}&page=${currentPage}&query=${encodeURIComponent(query)}`;
+            const endpoint = `https://api.themoviedb.org/3/search/multi?${baseParams}`;
+
+            const response = await fetch(endpoint);
+            const data = await response.json();
+
+            if (data.results) {
+                const processedResults = data.results
+                    .filter(item => item.poster_path)
+                    .map(item => ({
+                        ...item,
+                        media_type: item.media_type || (item.first_air_date ? 'tv' : 'movie')
+                    }));
+
+                if (reset || currentPage === 1) {
+                    setSearchResults(processedResults);
+                } else {
+                    setSearchResults(prev => [...prev, ...processedResults]);
+                }
+
+                setTotalPages(Math.min(data.total_pages || 1, 500));
+                setHasSearched(true);
+            }
+        } catch (error) {
+            console.error('Error searching:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [API_KEY]);
+
+    // Handle search input with debouncing
+    const handleSearchInput = (value) => {
+        setSearchQuery(value);
+        
+        // Clear existing timeout
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+
+        // Set new timeout for search
+        if (value.trim()) {
+            const timeoutId = setTimeout(() => {
+                performSearch(value, 1, true);
+            }, 500); // 500ms debounce
+            setSearchTimeout(timeoutId);
+        } else {
+            setSearchResults([]);
+            setHasSearched(false);
+            setLoading(false);
+        }
+    };
+
     
-    // Watchlist functionality
-    addToWatchlist,
-    number,
     
-    // Constants
-    img_300,
-  } = useWatchlist();
+    const handleLike = (item) => {
+        const newLiked = new Set(likedItems);
+        if (likedItems.has(item.id)) {
+            newLiked.delete(item.id);
+        } else {
+            newLiked.add(item.id);
+            addToWatchlist(item);
+        }
+        setLikedItems(newLiked);
+    };
 
-  const handleAddToWatchlist = (movie) => {
-    const movieToAdd = movie || selectedMovie;
-    if (!movieToAdd) return;
-    
-    addToWatchlist(movieToAdd);
-    
-    if (!movie) handleCloseModal();
-  };
-
-  const handleOpenModal = async (movie) => {
-    setSelectedMovie(movie);
-    setModalOpen(true);
-    
-    // Fetch additional details if not already loaded
-    const details = getMovieDetails(movie.id);
-    if (!details || Object.keys(details).length === 0) {
-      await fetchMovieDetails(movie.id, movie.media_type);
-    }
-    
-    const fetchedTrailers = await fetchTrailers(movie.id, movie.media_type);
-    setActiveTrailer(0);
-  };
-
-  const handleCloseModal = () => {
-    setModalOpen(false);
-    setSelectedMovie(null);
-    setActiveTrailer(0);
-  };
-
-  // Helper function to format runtime
-  const formatRuntime = (minutes) => {
-    if (!minutes) return null;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-  };
-
-  // Enhanced Modal component for movie details
-  const MovieModal = ({ open, onClose, movie }) => {
-    if (!open || !movie) return null;
-
-    const {
-      title,
-      name,
-      poster_path,
-      backdrop_path,
-      first_air_date,
-      release_date,
-      overview,
-      vote_average,
-      vote_count,
-      media_type,
-    } = movie;
-
-    // Get additional details for this movie
-    const details = getMovieDetails(movie.id);
-
-    const formatDate = (dateString) => {
-      if (!dateString) return "Unknown";
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+    const loadMore = () => {
+        if (page < totalPages && !loading && searchQuery.trim()) {
+            const nextPage = page + 1;
+            setPage(nextPage);
+            performSearch(searchQuery, nextPage, false);
+        }
     };
 
     return (
-      <div
-        className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
-        onClick={onClose}
-      >
-        <div
-          className="bg-gray-900 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header with backdrop */}
-          <div className="relative h-64 bg-gradient-to-b from-transparent to-gray-900">
-            {backdrop_path ? (
-              <img
-                src={`https://image.tmdb.org/t/p/w1280${backdrop_path}`}
-                alt="Backdrop"
-                className="w-full h-full object-cover opacity-60"
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-blue-900 to-purple-900"></div>
-            )}
-            <div className="absolute top-4 right-4">
-              <button
-                onClick={onClose}
-                className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full transition-all duration-200"
-                aria-label="Close modal"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="absolute bottom-4 left-6 flex items-end space-x-4">
-              <img
-                src={poster_path ? `${img_300}${poster_path}` : imagenotfound}
-                alt="Poster"
-                className="w-24 h-36 rounded-lg shadow-lg border-2 border-white/20"
-              />
-              <div className="text-white pb-2">
-                <h2 className="text-3xl font-bold mb-2">{title || name}</h2>
-                <div className="flex items-center space-x-4 text-sm text-gray-300 flex-wrap">
-                  <span className="flex items-center">
-                    <Calendar className="w-4 h-4 mr-1" />
-                    {formatDate(first_air_date || release_date)}
-                  </span>
-                  <span className="px-2 py-1 bg-blue-600 rounded-full text-xs font-medium">
-                    {media_type === "tv" ? "TV Series" : "Movie"}
-                  </span>
-                  {/* Runtime for movies */}
-                  {media_type === 'movie' && details.runtime && (
-                    <span className="flex items-center">
-                      <Clock className="w-4 h-4 mr-1" />
-                      {formatRuntime(details.runtime)}
-                    </span>
-                  )}
-                  {/* Seasons for TV shows */}
-                  {media_type === 'tv' && details.number_of_seasons && (
-                    <span className="flex items-center">
-                      <Tv className="w-4 h-4 mr-1" />
-                      {details.number_of_seasons} Season{details.number_of_seasons !== 1 ? 's' : ''}
-                    </span>
-                  )}
-                  {vote_average > 0 && (
-                    <span className="flex items-center bg-yellow-500 text-black px-2 py-1 rounded-full text-xs font-semibold">
-                      <Star className="w-3 h-3 mr-1" />
-                      {vote_average.toFixed(1)}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+            {/* Header */}
+            <div className="bg-black/80 backdrop-blur-xl border-b border-gray-800">
+                <div className="max-w-7xl mx-auto px-4 py-6">
+                    <div className="flex flex-col gap-4">
+                        {/* Title and View Toggle */}
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                           
 
-          {/* Content area */}
-          <div className="p-6 overflow-y-auto max-h-[calc(90vh-16rem)]">
-            {/* Additional Info Section */}
-            {details && Object.keys(details).length > 0 && (
-              <div className="mb-6 bg-gray-800 rounded-xl p-6">
-                <h3 className="text-xl font-semibold text-white mb-4">Details</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                  {media_type === 'movie' && details.runtime && (
-                    <div>
-                      <span className="text-gray-400">Runtime:</span>
-                      <p className="text-white font-medium">{formatRuntime(details.runtime)}</p>
-                    </div>
-                  )}
-                  {media_type === 'tv' && details.number_of_seasons && (
-                    <div>
-                      <span className="text-gray-400">Seasons:</span>
-                      <p className="text-white font-medium">{details.number_of_seasons}</p>
-                    </div>
-                  )}
-                  {media_type === 'tv' && details.episode_run_time && details.episode_run_time.length > 0 && (
-                    <div>
-                      <span className="text-gray-400">Episode Length:</span>
-                      <p className="text-white font-medium">{details.episode_run_time[0]} min</p>
-                    </div>
-                  )}
-                  {details.status && (
-                    <div>
-                      <span className="text-gray-400">Status:</span>
-                      <p className="text-white font-medium">{details.status}</p>
-                    </div>
-                  )}
-                  {details.genres && details.genres.length > 0 && (
-                    <div className="col-span-2 md:col-span-3">
-                      <span className="text-gray-400">Genres:</span>
-                      <p className="text-white font-medium">
-                        {details.genres.map(genre => genre.name).join(', ')}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+                                                    </div>
 
-            {/* Trailers Section */}
-            {loadingTrailers ? (
-              <div className="mb-6 bg-gray-800 rounded-xl p-6">
-                <div className="animate-pulse">
-                  <div className="h-4 bg-gray-700 rounded w-24 mb-4"></div>
-                  <div className="bg-gray-700 rounded-lg h-48"></div>
-                </div>
-              </div>
-            ) : trailers && trailers.length > 0 ? (
-              <div className="mb-6 bg-gray-800 rounded-xl p-6">
-                <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
-                  <Play className="w-5 h-5 mr-2 text-red-500" />
-                  Trailers & Videos
-                </h3>
-                
-                {/* Main video player */}
-                <div className="mb-4">
-                  <div className="relative bg-black rounded-lg overflow-hidden">
-                    <iframe
-                      width="100%"
-                      height="300"
-                      src={`https://www.youtube.com/embed/${trailers[activeTrailer]?.key}?rel=0`}
-                      title={trailers[activeTrailer]?.name}
-                      frameBorder="0"
-                      allowFullScreen
-                      className="w-full"
-                    ></iframe>
-                  </div>
-                  <div className="mt-2 px-2">
-                    <h4 className="text-white font-medium">{trailers[activeTrailer]?.name}</h4>
-                    <p className="text-gray-400 text-sm">{trailers[activeTrailer]?.type}</p>
-                  </div>
-                </div>
-
-                {/* Video thumbnails */}
-                {trailers.length > 1 && (
-                  <div className="space-y-2">
-                    <h4 className="text-white text-sm font-medium">More Videos</h4>
-                    <div className="flex space-x-3 overflow-x-auto pb-2">
-                      {trailers.map((trailer, index) => (
-                        <button
-                          key={trailer.key}
-                          onClick={() => setActiveTrailer(index)}
-                          className={`flex-shrink-0 group relative ${
-                            index === activeTrailer ? 'ring-2 ring-red-500' : ''
-                          }`}
-                        >
-                          <div className="w-32 h-18 bg-gray-700 rounded-lg overflow-hidden relative">
-                            <img
-                              src={`https://img.youtube.com/vi/${trailer.key}/mqdefault.jpg`}
-                              alt={trailer.name}
-                              className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <Play className="w-6 h-6 text-white opacity-80" />
+                        {/* Search and Category Filters */}
+                        <div className="flex flex-col gap-4">
+                            {/* Search */}
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                <input
+                                    type="text"
+                                    placeholder="Search movies and TV shows..."
+                                    value={searchQuery}
+                                    onChange={(e) => handleSearchInput(e.target.value)}
+                                    className="w-full bg-gray-800 text-white pl-10 pr-4 py-3 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                />
                             </div>
-                          </div>
-                          <p className="text-xs text-gray-300 mt-1 w-32 truncate">
-                            {trailer.name}
-                          </p>
-                        </button>
-                      ))}
+
+                                                    </div>
+
+                        {/* Results Info */}
+                        {hasSearched && (
+                            <div className="flex items-center justify-between text-gray-400 text-sm">
+                                <span>
+                                    {searchResults.length > 0 
+                                        ? `Found ${searchResults.length} results for "${searchQuery}"`
+                                        : `No results found for "${searchQuery}"`
+                                    }
+                                </span>
+                                {likedItems.size > 0 && (
+                                    <span className="flex items-center gap-1">
+                                        <Heart className="w-4 h-4 text-red-500" />
+                                        {likedItems.size} liked
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
-                  </div>
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="max-w-7xl mx-auto px-4 py-8">
+                {/* Loading State */}
+                {loading && (
+                    <div className="text-center py-16">
+                        <motion.div 
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"
+                        />
+                        <p className="text-white text-lg">Searching...</p>
+                    </div>
                 )}
-              </div>
-            ) : (
-              <div className="mb-6 bg-gray-800 rounded-xl p-6 text-center">
-                <Play className="w-12 h-12 text-gray-600 mx-auto mb-2" />
-                <p className="text-gray-400">No trailers available</p>
-              </div>
-            )}
 
-            {/* Overview Section */}
-            <div className="mb-6">
-              <h3 className="text-xl font-semibold text-white mb-3">Overview</h3>
-              <p className="text-gray-300 leading-relaxed">
-                {overview || "No overview available for this title."}
-              </p>
+                {/* Empty State - No Search */}
+                {!hasSearched && !loading && (
+                    <div className="text-center py-16">
+                        
+                        <h3 className="text-2xl font-bold text-white mb-2">Search for Movies & TV Shows</h3>
+                        <p className="text-gray-400">Enter a title, genre, or keyword to get started</p>
+                    </div>
+                )}
+
+                {/* No Results */}
+                {hasSearched && searchResults.length === 0 && !loading && (
+                    <div className="text-center py-16">
+                        <div className="text-6xl mb-4">😔</div>
+                        <h3 className="text-2xl font-bold text-white mb-2">No results found</h3>
+                        <p className="text-gray-400 mb-6">Try adjusting your search terms</p>
+                    </div>
+                )}
+
+                {/* Results */}
+                {searchResults.length > 0 && (
+                    <>
+                        {/* Grid/List View */}
+                        <motion.div
+                            layout
+                            className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6'
+                        >
+                            <AnimatePresence>
+                                {searchResults.map((item, index) => (
+                                    <ContentCard
+                                        key={`${item.id}-${item.media_type}-${index}`}
+                                        item={item}
+                                                                                isLiked={likedItems.has(item.id)}
+                                        onLike={handleLike}
+                                        onShowDetails={(movie) => {
+                                            setSelectedMovie(movie);
+                                            setModalOpen(true);
+                                            fetchMovieDetails(movie.id, movie.media_type);
+                                            fetchTrailers(movie.id, movie.media_type);
+                                        }}
+                                        img_300={img_300}
+                                        img_500={img_500}
+                                        imagenotfound={imagenotfound}
+                                    />
+                                ))}
+                            </AnimatePresence>
+                        </motion.div>
+
+                        {/* Load More */}
+                        {page < totalPages && (
+                            <div className="text-center mt-12">
+                                <button
+                                    onClick={loadMore}
+                                    disabled={loading}
+                                    className="px-8 py-3 bg-gradient-to-r from-blue-700 to-blue-300 hover:from-blue-700 hover:to-blue-200 text-white rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                >
+                                    {loading ? (
+                                        <div className="flex items-center gap-2">
+                                            <motion.div 
+                                                animate={{ rotate: 360 }}
+                                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                                className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                                            />
+                                            Loading...
+                                        </div>
+                                    ) : (
+                                        `Load More (${page}/${totalPages})`
+                                    )}
+                                </button>
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
 
-            {/* Stats Section */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-gray-800 rounded-lg p-4 text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <Star className="w-5 h-5 text-yellow-400 mr-1" />
-                  <span className="text-white font-semibold">
-                    {vote_average ? vote_average.toFixed(1) : "N/A"}
-                  </span>
-                </div>
-                <p className="text-gray-400 text-sm">Rating</p>
-              </div>
-              <div className="bg-gray-800 rounded-lg p-4 text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <Users className="w-5 h-5 text-blue-400 mr-1" />
-                  <span className="text-white font-semibold">
-                    {vote_count ? vote_count.toLocaleString() : "0"}
-                  </span>
-                </div>
-                <p className="text-gray-400 text-sm">Votes</p>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex space-x-3">
-             
-              <button 
-                onClick={() => handleAddToWatchlist(movie)}
-                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Add to Watchlist
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="min-h-screen py-8 bg-gradient-to-br from-gray-900 via-black to-gray-900  flex flex-col items-center">
-      {/* Movie Modal */}
-      <MovieModal
-        open={modalOpen}
-        onClose={handleCloseModal}
-        movie={selectedMovie}
-      />
-      
-      {/* Header Section */}
-      <div className="flex flex-col items-center justify-center mb-4 relative">
-       
-
-         <div className="col-span-full text-center text-white/70 font-medium text-lg mt-3">
-              Search for movies or TV shows 
-            </div>
-
-
-         <div className="flex items-center bg-gray-800 rounded-lg p-2 lg:w-2xl md:w-xl mt-3 mb-3 sm:w-lg shadow-sm">
-                     <Searches className="w-5 h-5 text-gray-400 mr-2" />
-                    <input
-                      type="text"
-                      placeholder="Search for movies or TV shows..."
-                      value={searchText}
-                      onChange={(e) => updateSearchText(e.target.value)}
-                      className="bg-transparent text-white w-full focus:outline-none placeholder-gray-400"
-                      aria-label="Search watchlist"
+            {/* Modal */}
+            <AnimatePresence>
+                {modalOpen && selectedMovie && (
+                    <MovieModal 
+                        open={modalOpen} 
+                        onClose={() => {
+                            setModalOpen(false);
+                            setSelectedMovie(null);
+                        }}
+                        movie={selectedMovie}
+                        onAddToWatchlist={() => handleLike(selectedMovie)}
+                        isLiked={likedItems.has(selectedMovie.id)}
+                        img_500={img_500}
+                        imagenotfound={imagenotfound}
                     />
-                  </div>
-
-        
-      </div>
-        
-      {/* Loading indicator */}
-      {isSearching && (
-        <div className="text-white text-center mb-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-          <p className="mt-2">Searching...</p>
+                )}
+            </AnimatePresence>
         </div>
-      )}
-
-      {/* Results Section */}
-      <div className="container mx-auto px-4 flex justify-center">
-
-      {/* Trending Series Section - Now using same styling as search results */}
-      {!searchText && (
-        <div className="grid justify-center grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {series.map((show) => {
-            // Get additional details for this show
-            const details = getMovieDetails(show.id);
-            
-            return (
-              <div
-                className="bg-gray-900 rounded-xl shadow-lg w-full overflow-hidden hover:scale-105 transition-transform duration-200 group mx-auto"
-                style={{ maxWidth: "420px" }}
-                key={show.id}
-              >
-                <div className="relative">
-                  <img
-                    src={
-                      show.poster_path
-                        ? `${img_300}/${show.poster_path}`
-                        : imagenotfound
-                    }
-                    alt={show.name}
-                    className="w-full h-72 object-cover transition-opacity duration-300 group-hover:opacity-80"
-                    loading="lazy"
-                  />
-                  <span className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
-                    {show.media_type}
-
-                  </span>
-                  {show.vote_average > 0 && (
-                    <span className="absolute top-2 right-2 flex items-center bg-yellow-400/90 text-black text-xs px-2 py-1 rounded-full font-semibold">
-                      {show.vote_average.toFixed(1)}
-                      <Star className="ml-1 w-4 h-4 text-yellow-700" />
-                    </span>
-                  )}
-                  {/* Show seasons on card */}
-                  {details.number_of_seasons && (
-                    <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center">
-                      <Tv className="w-3 h-3 mr-1" />
-                      {details.number_of_seasons} Season{details.number_of_seasons !== 1 ? 's' : ''}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="p-4 flex flex-col h-56">
-                  <h5 className="text-lg font-semibold text-white text-center mb-1 truncate">
-                    {show.name || show.title}
-                  </h5>
-                  <div className="flex items-center justify-center text-xs text-gray-600 mb-2">
-                    <span>
-                      {show.first_air_date || show.release_date || "Unknown"}
-                    </span>
-                    {show.vote_count ? (
-                      <span className="ml-2 text-gray-400">({show.vote_count} votes)</span>
-                    ) : null}
-                  </div>
-                  <p className="text-white text-sm flex-1 line-clamp-1 overflow-hidden">
-                    {show.overview || "No overview available."}
-                  </p>
-                  <div className="flex flex-col gap-2 mt">
-                    <button 
-                      onClick={() => handleOpenModal({...show})}
-                      className="bg-blue-900 rounded text-white flex items-center justify-center w-full px-4 py-2 font-medium hover:bg-blue-800 transition"
-                    >
-                      <Info className='mr-1 w-4 text-white'/> More Info
-                    </button>
-                    <button 
-                      onClick={() => handleAddToWatchlist({...show})}
-                      className="bg-white border border-blue-900 flex items-center justify-center rounded text-blue-900 w-full px-4 py-2 font-medium hover:bg-blue-50 transition"
-                    >
-                      <Plus className='mr-1 text-blue-800' /> Add to Watchlist
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Search Results Section */}
-      <div className="grid justify-center grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {searchResults && searchResults.length > 0 ? (
-          searchResults.map((movie) => {
-            const {
-              name,
-              title,
-              poster_path,
-              first_air_date,
-              release_date,
-              media_type,
-              vote_average,
-              vote_count,
-              overview,
-              id,
-            } = movie;
-            
-            // Get additional details for this movie
-            const details = getMovieDetails(id);
-            
-            return (
-              <div
-                className="bg-gray-900 rounded-xl shadow-lg w-full overflow-hidden hover:scale-105 transition-transform duration-200 group mx-auto"
-                style={{ maxWidth: "420px" }}
-                key={id}
-              >
-                <div className="relative">
-                  <img
-                    src={poster_path ? `${img_300}/${poster_path}` : imagenotfound}
-                    className="w-full h-72 object-cover transition-opacity duration-300 group-hover:opacity-80"
-                    alt={title || name || "Movie poster"}
-                    loading="lazy"
-                  />
-                  <span className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
-                    {media_type === "tv" ? "TV" : "Movie"}
-                  </span>
-                  {vote_average > 0 && (
-                    <span className="absolute top-2 right-2 flex items-center bg-yellow-400/90 text-black text-xs px-2 py-1 rounded-full font-semibold">
-                      {vote_average.toFixed(1)}
-                      <Star className="ml-1 w-4 h-4 text-yellow-700" />
-                    </span>
-                  )}
-                  {/* Show runtime/seasons on card */}
-                  {(details.runtime || details.number_of_seasons) && (
-                    <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center">
-                      {media_type === 'movie' && details.runtime ? (
-                        <>
-                          <Clock className="w-3 h-3 mr-1" />
-                          {formatRuntime(details.runtime)}
-                        </>
-                      ) : media_type === 'tv' && details.number_of_seasons ? (
-                        <>
-                          <Tv className="w-3 h-3 mr-1" />
-                          {details.number_of_seasons} Season{details.number_of_seasons !== 1 ? 's' : ''}
-                        </>
-                      ) : null}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="p-4 flex flex-col h-56">
-                  <h5 className="text-lg font-semibold text-white text-center mb-1 truncate">
-                    {title || name}
-                  </h5>
-                  <div className="flex items-center justify-center text-xs text-gray-600 mb-2">
-                    <span>
-                      {first_air_date || release_date || "Unknown"}
-                    </span>
-                    {vote_count ? (
-                      <span className="ml-2 text-gray-400">({vote_count} votes)</span>
-                    ) : null}
-                  </div>
-                  <p className="text-white text-sm flex-1  line-clamp-1 overflow-hidden">
-                    {overview || "No overview available."}
-                  </p>
-                  <div className="flex flex-col gap-2 mt">
-                    <button 
-                      onClick={() => handleOpenModal(movie)}
-                      className="bg-blue-900 rounded text-white flex items-center justify-center w-full px-4 py-2 font-medium hover:bg-blue-800 transition"
-                    >
-                      <Info className='mr-1 w-4 text-white'/> More Info
-                    </button>
-                    <button 
-                      onClick={() => handleAddToWatchlist(movie)}
-                      className="bg-white border border-blue-900 flex items-center justify-center rounded text-blue-900 w-full px-4 py-2 font-medium hover:bg-blue-50 transition">
-                      <Plus className='mr-1 text-blue-800' /> Add to Watchlist
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        ) : searchText.trim() && (
-          <div className="col-span-full text-center text-white font-semibold text-xl mt-8">
-            No results found for "{searchText}"
-          </div>
-        ) }
-      </div>
-      </div>
-      <footer className="mt-8 text-gray-500 text-sm">
-        <p className="text-center"> 
-          made by jose idris
-          </p>
-          </footer>
-    </div>
-  );
+    );
 }
 
-export default Home1
+// Content Card Component
+function ContentCard({ item, isLiked, onLike, onShowDetails, img_300, img_500, imagenotfound }) {
+    const { title, name, poster_path, first_air_date, release_date, media_type, vote_average } = item;
+
+    return (
+        <motion.div
+            layout
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            whileHover={{ scale: 1.05, y: -5 }}
+            className="bg-gray-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-700 hover:border-gray-600 transition-all duration-300 cursor-pointer group"
+            onClick={() => onShowDetails(item)}
+        >
+            <div className="relative">
+                <img
+                    src={poster_path ? `${img_300}${poster_path}` : imagenotfound}
+                    alt={title || name}
+                    className="w-full aspect-[2/3] object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                {/* Rating Badge */}
+                {vote_average > 0 && (
+                    <div className="absolute top-2 left-2 flex items-center bg-yellow-400/90 backdrop-blur-sm text-black px-2 py-1 rounded-full text-xs font-bold">
+                        <Star className="w-3 h-3 mr-1 fill-current" />
+                        {vote_average.toFixed(1)}
+                    </div>
+                )}
+
+                {/* Media Type Badge */}
+                <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-medium">
+                    {media_type === 'tv' ? 'TV' : 'Movie'}
+                </div>
+
+                {/* Like Button */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onLike(item);
+                    }}
+                    className={`absolute bottom-2 right-2 p-2 rounded-full transition-all duration-300 ${
+                        isLiked
+                            ? 'bg-red-500 text-white scale-110'
+                            : 'bg-black/60 text-white hover:bg-red-500 hover:scale-110'
+                    }`}
+                >
+                    <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                </button>
+
+                {/* Hover Overlay */}
+                <div className="absolute bottom-0 left-0 right-0 p-3 text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                    <h3 className="font-semibold text-sm truncate">{title || name}</h3>
+                    {(first_air_date || release_date) && (
+                        <p className="text-gray-300 text-xs mt-1">
+                            {new Date(first_air_date || release_date).getFullYear()}
+                        </p>
+                    )}
+                </div>
+            </div>
+        </motion.div>
+    );
+}
+
+// Movie Modal Component
+function MovieModal({ open, onClose, movie, onAddToWatchlist, isLiked, img_500, imagenotfound }) {
+    if (!open || !movie) return null;
+
+    const { 
+        title, 
+        name, 
+        poster_path, 
+        backdrop_path, 
+        first_air_date, 
+        release_date, 
+        overview, 
+        vote_average, 
+        vote_count, 
+        media_type,
+        genre_ids = []
+    } = movie;
+
+    const { getMovieDetails, trailers, loadingTrailers } = useWatchlist();
+    const details = getMovieDetails(movie.id) || {};
+
+    const formatDate = (dateString) => {
+        if (!dateString) return "Unknown";
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    };
+
+    const genres = [
+        { id: 28, name: 'Action' }, { id: 12, name: 'Adventure' }, { id: 16, name: 'Animation' },
+        { id: 35, name: 'Comedy' }, { id: 80, name: 'Crime' }, { id: 99, name: 'Documentary' },
+        { id: 18, name: 'Drama' }, { id: 10751, name: 'Family' }, { id: 14, name: 'Fantasy' },
+        { id: 36, name: 'History' }, { id: 27, name: 'Horror' }, { id: 10402, name: 'Music' },
+        { id: 9648, name: 'Mystery' }, { id: 10749, name: 'Romance' }, { id: 878, name: 'Sci-Fi' },
+        { id: 10770, name: 'TV Movie' }, { id: 53, name: 'Thriller' }, { id: 10752, name: 'War' },
+        { id: 37, name: 'Western' }
+    ];
+
+    const getGenreNames = () => {
+        if (details.genres && details.genres.length) {
+            return details.genres.map(g => g.name);
+        }
+        return genre_ids.map(id => {
+            const genre = genres.find(g => g.id === id);
+            return genre ? genre.name : null;
+        }).filter(Boolean);
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4 overflow-y-auto"
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                className="bg-gray-900 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-gray-800 my-8"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header with backdrop */}
+                <div className="relative h-64 bg-gradient-to-b from-transparent to-gray-900">
+                    {backdrop_path ? (
+                        <img
+                            src={`https://image.tmdb.org/t/p/w1280${backdrop_path}`}
+                            alt="Backdrop"
+                            className="w-full h-full object-cover opacity-60"
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-900 to-purple-900"></div>
+                    )}
+                    <div className="absolute top-4 right-4">
+                        <button
+                            onClick={onClose}
+                            className="bg-black/70 hover:bg-black/90 text-white p-3 rounded-full transition-all duration-200 backdrop-blur-sm"
+                            aria-label="Close modal"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+                    <div className="absolute bottom-4 left-6 flex items-end space-x-4">
+                        <img
+                            src={poster_path ? `${img_500}${poster_path}` : imagenotfound}
+                            alt="Poster"
+                            className="w-24 h-36 rounded-lg shadow-lg border-2 border-white/20"
+                        />
+                        <div className="text-white pb-2">
+                            <h2 className="text-3xl font-bold mb-2">{title || name}</h2>
+                            <div className="flex items-center space-x-4 text-sm text-gray-300 flex-wrap">
+                                <span className="flex items-center">
+                                    <Calendar className="w-4 h-4 mr-1" />
+                                    {formatDate(first_air_date || release_date)}
+                                </span>
+                                <span className="px-2 py-1 bg-blue-600 rounded-full text-xs font-medium">
+                                    {media_type === "tv" ? "TV Series" : "Movie"}
+                                </span>
+                                {vote_average > 0 && (
+                                    <span className="flex items-center bg-yellow-500 text-black px-2 py-1 rounded-full text-xs font-semibold">
+                                        <Star className="w-3 h-3 mr-1 fill-current" />
+                                        {vote_average.toFixed(1)}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Content area */}
+                <div className="p-6 overflow-y-auto max-h-[calc(90vh-16rem)]">
+                    {/* Overview Section */}
+                    <div className="mb-6">
+                        <h3 className="text-xl font-semibold text-white mb-3">Overview</h3>
+                        <p className="text-gray-300 leading-relaxed">
+                            {overview || "No overview available for this title."}
+                        </p>
+                    </div>
+
+                    {/* Genres */}
+                    {getGenreNames().length > 0 && (
+                        <div className="mb-6">
+                            <h3 className="text-lg font-semibold text-white mb-3">Genres</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {getGenreNames().map((genre, index) => (
+                                    <span 
+                                        key={index}
+                                        className="px-3 py-1 bg-gray-700 text-gray-300 rounded-full text-sm"
+                                    >
+                                        {genre}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Details */}
+                    <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-white mb-3">Details</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="bg-gray-800 rounded-lg p-4">
+                                <p className="text-gray-400 text-sm">Status</p>
+                                <p className="text-white font-medium">{details.status || 'Unknown'}</p>
+                            </div>
+                            <div className="bg-gray-800 rounded-lg p-4">
+                                <p className="text-gray-400 text-sm">Duration</p>
+                                <p className="text-white font-medium">
+                                    {media_type === 'tv'
+                                        ? (details.number_of_seasons ? `${details.number_of_seasons} season(s)` : 'N/A')
+                                        : (details.runtime ? `${details.runtime} min` : 'N/A')}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Stats Section */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="bg-gray-800 rounded-lg p-4 text-center">
+                            <div className="flex items-center justify-center mb-2">
+                                <Star className="w-5 h-5 text-yellow-400 mr-1 fill-current" />
+                                <span className="text-white font-semibold">
+                                    {vote_average ? vote_average.toFixed(1) : "N/A"}
+                                </span>
+                            </div>
+                            <p className="text-gray-400 text-sm">Rating</p>
+                        </div>
+                        <div className="bg-gray-800 rounded-lg p-4 text-center">
+                            <div className="flex items-center justify-center mb-2">
+                                <Users className="w-5 h-5 text-blue-400 mr-1" />
+                                <span className="text-white font-semibold">
+                                    {vote_count ? vote_count.toLocaleString() : "0"}
+                                </span>
+                            </div>
+                            <p className="text-gray-400 text-sm">Votes</p>
+                        </div>
+                    </div>
+
+                    {/* Trailers */}
+                    <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-white mb-3">Trailers</h3>
+                        {loadingTrailers ? (
+                            <div className="flex items-center justify-center py-6">
+                                <motion.div 
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                    className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full"
+                                />
+                            </div>
+                        ) : (
+                            trailers && trailers.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {trailers.slice(0, 2).map((t) => (
+                                        <div key={t.id || t.key} className="aspect-video">
+                                            <iframe
+                                                className="w-full h-full rounded-lg"
+                                                src={`https://www.youtube.com/embed/${t.key}`}
+                                                title={t.name}
+                                                frameBorder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-gray-400">No trailers found.</p>
+                            )
+                        )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex space-x-3">
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onAddToWatchlist();
+                            }}
+                            className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center transform hover:scale-105 ${
+                                isLiked
+                                    ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white'
+                                    : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white'
+                            }`}
+                        >
+                            <Heart className={`w-5 h-5 mr-2 ${isLiked ? 'fill-current' : ''}`} />
+                            {isLiked ? 'Remove from Watchlist' : 'Add to Watchlist'}
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+}
