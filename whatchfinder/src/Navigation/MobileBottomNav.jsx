@@ -40,7 +40,9 @@ export default function MobileBottomNav() {
   return (
     <>
       {/* Mobile Bottom Navigation - Only visible on mobile */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 lg:hidden z-50">
+      {/* Spacer to prevent content from being hidden behind the fixed bottom nav */}
+      <div aria-hidden="true" className="lg:hidden" style={{ height: 'calc(64px + env(safe-area-inset-bottom))' }}></div>
+      <nav className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 lg:hidden z-40" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="flex justify-around items-center py-2">
           {navigationItems.map((item) => (
             <NavLink
