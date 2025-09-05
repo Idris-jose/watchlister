@@ -201,17 +201,29 @@ const Watchlist = () => {
                   </p>
                 </div>
                 <div className="flex gap-2 px-4 pb-4">
-                  <button
-                    onClick={() => addToWatched(movie.id)}
-                    className={`rounded text-white w-full py-2 text-sm font-medium transition-colors ${
-                      isWatched(movie.id)
-                        ? 'bg-gray-600 hover:bg-gray-700'
-                        : 'bg-green-600 hover:bg-green-700'
-                    }`}
-                  >
-                    {isWatched(movie.id) ? 'Mark as Unwatched' : 'Mark Watched'}
-                  </button>
-                </div>
+  <button
+    onClick={() => addToWatched(movie.id)}
+    className={`rounded text-white w-full py-2 text-sm font-medium transition-colors ${
+      isWatched(movie.id)
+        ? 'bg-gray-600 hover:bg-gray-700'
+        : 'bg-green-600 hover:bg-green-700'
+    }`}
+  >
+    {isWatched(movie.id) ? 'Mark as Unwatched' : 'Mark Watched'}
+  </button>
+
+  {/* Watch Now button */}
+  <a
+    href={`https://moviebox.ph/detail/${movie.title
+      ?.toLowerCase()
+      .replace(/\s+/g, '-')}-${movie.id}?id=${movie.id}&type=/movie/detail`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="rounded bg-blue-600 hover:bg-blue-700 text-white w-full py-2 text-sm font-medium text-center transition-colors"
+  >
+    Watch Now
+  </a>
+</div>
               </div>
             ))}
           </div>

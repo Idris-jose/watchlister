@@ -16,6 +16,9 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import { WatchlistProvider } from './Watchlistcontext.jsx';
 import { AuthProvider } from './Auth/AuthContext.jsx';
 import { SidebarProvider, useSidebar } from './SidebarContext.jsx';
+
+
+
 import Watchlist from './Watchlist.jsx'
 
 // SEO utilities and component
