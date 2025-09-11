@@ -200,7 +200,7 @@ const Watchlist = () => {
                     Priority: {movie.priority ? movie.priority.charAt(0).toUpperCase() + movie.priority.slice(1) : "Medium"}
                   </p>
                 </div>
-                <div className="flex gap-2 px-4 pb-4">
+                <div className="flex ">
   <button
     onClick={() => addToWatched(movie.id)}
     className={`rounded text-white w-full py-2 text-sm font-medium transition-colors ${
@@ -212,17 +212,7 @@ const Watchlist = () => {
     {isWatched(movie.id) ? 'Mark as Unwatched' : 'Mark Watched'}
   </button>
 
-  {/* Watch Now button */}
-  <a
-    href={`https://moviebox.ph/detail/${movie.title
-      ?.toLowerCase()
-      .replace(/\s+/g, '-')}-${movie.id}?id=${movie.id}&type=/movie/detail`}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="rounded bg-blue-600 hover:bg-blue-700 text-white w-full py-2 text-sm font-medium text-center transition-colors"
-  >
-    Watch Now
-  </a>
+ 
 </div>
               </div>
             ))}
