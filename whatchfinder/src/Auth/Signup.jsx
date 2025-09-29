@@ -5,7 +5,7 @@ import background from '../assets/peakpx.jpg';
 import logo from '../assets/logo.png'
 
 export default function SignUp() {
-  const { signUp, loading, error, email, password, setEmail, setPassword } = useAuth();
+  const { signUp, loading, error, email, password, setEmail, setPassword,handleDemoLogin } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
@@ -172,6 +172,22 @@ export default function SignUp() {
               'Create Account'
             )}
           </button>
+
+          <button
+  onClick={handleDemoLogin}
+  disabled={loading}
+  className="w-full bg-gray-800 hover:bg-gray-900 text-white font-medium rounded-md px-4 py-3 transition duration-300 flex justify-center items-center disabled:opacity-50"
+>
+  {loading ? (
+    <span className="flex items-center justify-center">
+      <span className="inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+      Logging in...
+    </span>
+  ) : (
+    "Continue as Demo"
+  )}
+</button>
+
 
           <div className="text-center">
             <p className="text-gray-600 text-sm">

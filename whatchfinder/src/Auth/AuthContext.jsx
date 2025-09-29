@@ -74,6 +74,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+   const handleDemoLogin = async () => {
+    try {
+      setLoading(true)
+      await signInWithEmailAndPassword(auth, "demo@yourapp.com", "demopassword")
+      toast.success("🎉 Logged in as demo user!")
+    } catch (error) {
+      console.error("Demo login error:", error.message)
+      toast.error("❌ Demo login failed. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
@@ -146,7 +159,8 @@ export const AuthProvider = ({ children }) => {
       signIn,
       signInWithGoogle,
       sendPasswordReset,
-      logout
+      logout,
+      handleDemoLogin,
     }}>
       {children}
       <Toaster />

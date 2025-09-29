@@ -5,7 +5,7 @@ import logo from '../assets/logo.png'
 import { useAuth } from './AuthContext';
 
 export default function Login() {
-  const { signIn, loading, error, email, password, setEmail, setPassword, signInWithGoogle } = useAuth();
+  const { signIn, loading, error, email, password, setEmail, setPassword, signInWithGoogle ,handleDemoLogin} = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
@@ -199,6 +199,22 @@ export default function Login() {
               'Sign In'
             )}
           </button>
+
+          <button
+  onClick={handleDemoLogin}
+  disabled={loading}
+  className="w-full bg-gray-800 hover:bg-gray-900 text-white font-medium rounded-md px-4 py-3 transition duration-300 flex justify-center items-center disabled:opacity-50"
+>
+  {loading ? (
+    <span className="flex items-center justify-center">
+      <span className="inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+      Logging in...
+    </span>
+  ) : (
+    "Continue as Demo"
+  )}
+</button>
+
 
           <div className="text-center">
             <p className="text-gray-600">
