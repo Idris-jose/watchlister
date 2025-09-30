@@ -26,6 +26,8 @@ export const AuthProvider = ({ children }) => {
 
   const navigate = useNavigate();
 
+  const isDemoUser = user?.email === "demo@yourapp.com";
+
   // Listen for auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {

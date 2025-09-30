@@ -16,7 +16,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import { WatchlistProvider } from './Watchlistcontext.jsx';
 import { AuthProvider } from './Auth/AuthContext.jsx';
 import { SidebarProvider, useSidebar } from './SidebarContext.jsx';
-
+import SearchPage from './components/search/SearchPage.jsx';
 
 
 import Watchlist from './Watchlist.jsx'
@@ -260,7 +260,7 @@ export default function App() {
                 } />
                 <Route path="/search" element={
                   <ProtectedRoute>
-                    <Home1 />
+                    <SearchPage />
                   </ProtectedRoute>
                 } />
                
