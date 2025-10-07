@@ -1,25 +1,23 @@
 import './App.css'
-import { useEffect } from 'react';
-import Home1 from './Home.jsx';
-import ForgotPassword from './Auth/ForgotPassword.jsx';
-import SignUp from './Auth/Signup.jsx';
-import Login from './Auth/Login.jsx';
-import SharedWatchlist from './SharedWatchlist.jsx';
-import Discover from './Discover.jsx';
-import MobileBottomNav from './Navigation/MobileBottomNav.jsx';
-import DesktopSidebarNav from './Navigation/DesktopSidebarNav.jsx';
-import LandingPage from './Landingpage/landingpage.jsx';
-
+import { useEffect, lazy, Suspense } from 'react';
 import ProtectedRoute from './Routes/ProtectedRoute.jsx';
 import PublicRoute from './Routes/PublicRoute.jsx';
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { WatchlistProvider } from './Watchlistcontext.jsx';
 import { AuthProvider } from './Auth/AuthContext.jsx';
 import { SidebarProvider, useSidebar } from './SidebarContext.jsx';
-import SearchPage from './components/search/SearchPage.jsx';
 
-
-import Watchlist from './Watchlist.jsx'
+// Lazy load components for code splitting
+const LandingPage = lazy(() => import('./Landingpage/landingpage.jsx'));
+const SignUp = lazy(() => import('./Auth/Signup.jsx'));
+const Login = lazy(() => import('./Auth/Login.jsx'));
+const ForgotPassword = lazy(() => import('./Auth/ForgotPassword.jsx'));
+const Discover = lazy(() => import('./Discover.jsx'));
+const SearchPage = lazy(() => import('./components/search/SearchPage.jsx'));
+const Watchlist = lazy(() => import('./Watchlist.jsx'));
+const SharedWatchlist = lazy(() => import('./SharedWatchlist.jsx'));
+const MobileBottomNav = lazy(() => import('./Navigation/MobileBottomNav.jsx'));
+const DesktopSidebarNav = lazy(() => import('./Navigation/DesktopSidebarNav.jsx'));
 
 // SEO utilities and component
 const SITE_NAME = 'Watchlister';
@@ -206,7 +204,7 @@ function AppLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <Seo 
+      <Seo
         title={meta.title}
         description={meta.description}
         canonical={meta.canonical}
@@ -215,20 +213,22 @@ function AppLayout({ children }) {
         ogImage={meta.ogImage}
         jsonLd={meta.jsonLd}
       />
-      {showNavigation && <DesktopSidebarNav />}
-      
-      {/* Main content area with dynamic spacing based on sidebar state */}
-      <main className={`min-h-screen ${
-        showNavigation 
-          ? isCollapsed 
-            ? 'lg:pl-20' 
-            : 'lg:pl-64' 
-          : ''
-      } ${showNavigation ? 'pb-20 lg:pb-0' : ''}`}>
-        {children}
-      </main>
-      
-      {showNavigation && <MobileBottomNav />}
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-white">Loading...</div>}>
+        {showNavigation && <DesktopSidebarNav />}
+
+        {/* Main content area with dynamic spacing based on sidebar state */}
+        <main className={`min-h-screen ${
+          showNavigation
+            ? isCollapsed
+              ? 'lg:pl-20'
+              : 'lg:pl-64'
+            : ''
+        } ${showNavigation ? 'pb-20 lg:pb-0' : ''}`}>
+          {children}
+        </main>
+
+        {showNavigation && <MobileBottomNav />}
+      </Suspense>
     </div>
   );
 }

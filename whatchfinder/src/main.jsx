@@ -4,7 +4,6 @@ import { createRoot } from 'react-dom/client'
 
 import './index.css'
 import App from './App.jsx'
- import logo from './assets/logo.png'
 
 // Set branding (favicon/title) at runtime
 (() => {
@@ -17,7 +16,7 @@ import App from './App.jsx'
       document.head.appendChild(el);
       return el;
     })();
-    link.href = logo;
+    link.href = '/icons8-clapboard-48 (1).png';
     if (document.title !== 'Watchlister') {
       document.title = 'Watchlister';
     }
