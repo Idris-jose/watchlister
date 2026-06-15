@@ -181,6 +181,7 @@ export const initializeUser = async (userId, userEmail) => {
         createdAt: new Date().toISOString(),
         watchlist: [],
         watched: [],
+        diary: [],
         achievements: [],
         shareSettings: {
           isPublic: false,
@@ -348,6 +349,37 @@ export const subscribeToUserData = (userId, callback) => {
   }, (error) => {
     console.error('Error in user data subscription:', error);
   });
+};
+
+export const addToDiaryDB = async (userId, entry) => {
+  try {
+    const userRef = doc(db, COLLECTIONS.USERS, userId);
+    await updateDoc(userRef, {
+      diary: arrayUnion(entry)
+    });
+  } catch (error) {
+    console.error('Error adding diary entry:', error);
+    throw error;
+  }
+};
+
+export const removeFromDiaryDB = async (userId, entryId) => {
+  try {
+    const userRef = doc(db, COLLECTIONS.USERS, userId);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      const diary = userSnap.data().diary || [];
+      const entryToRemove = diary.find(e => e.id === entryId);
+      if (entryToRemove) {
+        await updateDoc(userRef, {
+          diary: arrayRemove(entryToRemove)
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error removing diary entry:', error);
+    throw error;
+  }
 };
 
 export const updateUserAchievements = async (userId, achievement) => {

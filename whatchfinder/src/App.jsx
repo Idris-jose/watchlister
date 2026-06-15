@@ -6,6 +6,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import { WatchlistProvider } from './Watchlistcontext.jsx';
 import { AuthProvider } from './Auth/AuthContext.jsx';
 import { SidebarProvider, useSidebar } from './SidebarContext.jsx';
+import { DiaryProvider } from './Diary/DiaryContext.jsx';
 
 // Lazy load components for code splitting
 const LandingPage = lazy(() => import('./Landingpage/landingpage.jsx'));
@@ -18,6 +19,7 @@ const Watchlist = lazy(() => import('./Watchlist.jsx'));
 const SharedWatchlist = lazy(() => import('./SharedWatchlist.jsx'));
 const MobileBottomNav = lazy(() => import('./Navigation/MobileBottomNav.jsx'));
 const DesktopSidebarNav = lazy(() => import('./Navigation/DesktopSidebarNav.jsx'));
+const DiaryPage = lazy(() => import('./Diary/DiaryPage.jsx'));
 
 // SEO utilities and component
 const SITE_NAME = 'Watchlister';
@@ -160,6 +162,10 @@ function getRouteMeta(pathname) {
     meta.title = 'Discover — Watchlister';
     meta.description = 'Personalized movie and TV recommendations.';
     meta.noindex = true; // gated content
+  } else if (pathname === '/diary') {
+    meta.title = 'Film Diary — Watchlister';
+    meta.description = 'Your personal film diary. Log and revisit every movie you watch.';
+    meta.noindex = true; // user-specific
   } else if (pathname === '/search') {
     meta.title = 'Search — Watchlister';
     meta.description = 'Search movies and TV shows on Watchlister.';
@@ -239,40 +245,45 @@ export default function App() {
       <AuthProvider>
         <SidebarProvider>
           <WatchlistProvider>
-            <AppLayout>
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/signup" element={
-                  <PublicRoute>
-                    <SignUp />
-                  </PublicRoute>
-                } />
-                <Route path="/discover" element={
-                  <ProtectedRoute>
-                    <Discover />
-                  </ProtectedRoute>
-                } />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/login" element={
-                  <PublicRoute>
-                    <Login />
-                  </PublicRoute>
-                } />
-                <Route path="/search" element={
-                  <ProtectedRoute>
-                    <SearchPage />
-                  </ProtectedRoute>
-                } />
-               
-                <Route path="/watchlist" element={
-                  <ProtectedRoute>
-                    <Watchlist />
-                  </ProtectedRoute>
-                } />
-               
-                <Route path="/shared/:shareId" element={<SharedWatchlist />} />
-              </Routes>
-            </AppLayout>
+            <DiaryProvider>
+              <AppLayout>
+                <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/signup" element={
+                    <PublicRoute>
+                      <SignUp />
+                    </PublicRoute>
+                  } />
+                  <Route path="/discover" element={
+                    <ProtectedRoute>
+                      <Discover />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/login" element={
+                    <PublicRoute>
+                      <Login />
+                    </PublicRoute>
+                  } />
+                  <Route path="/search" element={
+                    <ProtectedRoute>
+                      <SearchPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/watchlist" element={
+                    <ProtectedRoute>
+                      <Watchlist />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/diary" element={
+                    <ProtectedRoute>
+                      <DiaryPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/shared/:shareId" element={<SharedWatchlist />} />
+                </Routes>
+              </AppLayout>
+            </DiaryProvider>
           </WatchlistProvider>
         </SidebarProvider>
       </AuthProvider>

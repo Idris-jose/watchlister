@@ -3,29 +3,28 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useSidebar } from '../SidebarContext.jsx';
 import { useAuth } from '../Auth/AuthContext.jsx';
 import { useWatchlist } from '../Watchlistcontext.jsx';
-import logo from '../assets/logo.png'
+import DiarySearchModal from '../Diary/DiarySearchModal.jsx';
+import logo from '../assets/logo.png';
 import { 
-  Clapperboard as Watchlist, 
+  Clapperboard as WatchlistIcon, 
   Search, 
-  Star, 
-  Home, 
   Compass,
   User,
-  Settings,
   LogOut,
   Menu,
   X,
-  Film
+  BookOpen,
+  Plus
 } from 'lucide-react';
 
 export default function DesktopSidebarNav() {
-  const {number} = useWatchlist()
+  const { number } = useWatchlist();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showDiaryModal, setShowDiaryModal] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-
-
   const { isCollapsed, setIsCollapsed } = useSidebar();
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -38,12 +37,13 @@ export default function DesktopSidebarNav() {
   const navigationItems = [
     { path: '/discover', icon: Compass, label: 'Discover' },
     { path: '/search', icon: Search, label: 'Search' },
-    { path: '/watchlist', icon: Watchlist, label: 'Watchlist' },
+    { path: '/watchlist', icon: WatchlistIcon, label: 'Watchlist' },
+    { path: '/diary', icon: BookOpen, label: 'Diary' },
   ];
 
   return (
     <>
-      {/* Desktop Sidebar - Hidden on mobile */}
+      {/* Desktop Sidebar */}
       <nav className={`fixed left-0 top-0 h-full bg-gray-900 border-r border-gray-800 transition-all duration-300 z-40 hidden lg:flex flex-col ${
         isCollapsed ? 'w-20' : 'w-64'
       }`}>
@@ -64,10 +64,27 @@ export default function DesktopSidebarNav() {
           </div>
         </div>
 
+        {/* + Log Film button */}
+        <div className={`${isCollapsed ? 'px-2 pt-4' : 'px-4 pt-4'}`}>
+          <button
+            onClick={() => setShowDiaryModal(true)}
+            title={isCollapsed ? 'Log a Film' : ''}
+            className={`flex items-center justify-center gap-2 w-full rounded-xl text-white text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-95 ${
+              isCollapsed ? 'p-3' : 'px-4 py-3'
+            }`}
+            style={{
+              background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
+              boxShadow: '0 0 18px rgba(59,130,246,0.35)',
+            }}
+          >
+            <Plus className="w-4 h-4 flex-shrink-0 stroke-[2.5]" />
+            {!isCollapsed && <span>Log Film</span>}
+          </button>
+        </div>
+
         {/* Navigation Items */}
-        <div className="flex-1 py-6">
-          <ul className="space-y-2">
-           
+        <div className="flex-1 py-4">
+          <ul className="space-y-1">
             {navigationItems.map((item) => (
               <li key={item.path} className={isCollapsed ? 'px-2' : 'px-3'}>
                 <NavLink
@@ -106,20 +123,16 @@ export default function DesktopSidebarNav() {
               </div>
               {!isCollapsed && (
                 <div className="ml-3 text-left transition-opacity duration-200 min-w-0 flex-1">
-                  <p className="font-medium text-white truncate">
-                    {user?.email || 'User'}
-                  </p>
+                  <p className="font-medium text-white truncate">{user?.email || 'User'}</p>
                   <p className="text-xs text-gray-500">Account</p>
                 </div>
               )}
             </button>
 
-            {/* User Dropdown Menu */}
+            {/* User Dropdown */}
             {showUserMenu && (
               <div className={`absolute bottom-full mb-2 ${
-                isCollapsed 
-                  ? 'left-full ml-2 w-48' 
-                  : 'left-3 right-3'
+                isCollapsed ? 'left-full ml-2 w-48' : 'left-3 right-3'
               } bg-gray-800 border border-gray-700 rounded-xl shadow-xl py-2 z-50`}>
                 <button
                   onClick={handleLogout}
@@ -134,13 +147,16 @@ export default function DesktopSidebarNav() {
         </div>
       </nav>
 
-      {/* Overlay for user menu on mobile (if needed) */}
+      {/* Overlay to close user menu */}
       {showUserMenu && (
         <div
           className="fixed inset-0 z-30 lg:hidden"
           onClick={() => setShowUserMenu(false)}
         />
       )}
+
+      {/* Diary Search Modal */}
+      {showDiaryModal && <DiarySearchModal onClose={() => setShowDiaryModal(false)} />}
     </>
   );
 }

@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import { createContext, useContext, useState, useEffect } from 'react';
 import { auth, googleProvider } from '../firebase-config'; // You need to import these
 import { signInWithPopup, createUserWithEmailAndPassword,sendPasswordResetEmail, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, getDocs, addDoc, query, where, orderBy } from 'firebase/firestore';
 
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -20,8 +19,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const navigate = useNavigate();
