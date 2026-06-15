@@ -79,7 +79,7 @@ function MovieCard({ entry, onRemove }) {
       {/* Remove */}
       <button
         onClick={() => onRemove(entry.id)}
-        className="opacity-0 group-hover:opacity-100 p-2 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-400/10 transition-all"
+        className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-2 rounded-lg text-gray-400 hover:text-red-400 md:text-gray-600 hover:bg-red-400/10 transition-all ml-auto flex-shrink-0"
         title="Remove from diary"
       >
         <Trash2 className="w-4 h-4" />
@@ -133,8 +133,11 @@ export default function DiaryPage() {
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #0b1220 0%, #0d1627 100%)' }}>
       {/* Header */}
-      <div className="sticky top-0 z-20 px-4 pt-6 pb-4"
-        style={{ background: 'linear-gradient(180deg, #0b1220 70%, transparent 100%)' }}
+      <div className="sticky top-0 z-20 px-4 pb-4"
+        style={{
+          paddingTop: 'calc(1.5rem + env(safe-area-inset-top))',
+          background: 'linear-gradient(180deg, #0b1220 70%, transparent 100%)'
+        }}
       >
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-4">
@@ -168,7 +171,7 @@ export default function DiaryPage() {
           >
             <button
               onClick={goBack}
-              className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+              className="p-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 active:scale-95 transition-all"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -178,7 +181,7 @@ export default function DiaryPage() {
             <button
               onClick={goForward}
               disabled={isCurrentMonth}
-              className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
