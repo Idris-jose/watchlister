@@ -131,7 +131,7 @@ export default function DiaryPage() {
   const totalThisMonth = grouped.reduce((acc, g) => acc + g.entries.length, 0);
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #0b1220 0%, #0d1627 100%)' }}>
+    <div className="min-h-screen overflow-x-hidden w-full" style={{ background: 'linear-gradient(160deg, #0b1220 0%, #0d1627 100%)' }}>
       {/* Header */}
       <div className="sticky top-0 z-20 px-4 pb-4"
         style={{
@@ -154,15 +154,7 @@ export default function DiaryPage() {
                 )}
               </div>
             </div>
-            {/* Log button */}
-            <button
-              onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all hover:scale-105 active:scale-95"
-              style={{ background: 'linear-gradient(135deg, #3b82f6, #06b6d4)', boxShadow: '0 0 20px rgba(59,130,246,0.3)' }}
-            >
-              <Plus className="w-4 h-4" />
-              Log Film
-            </button>
+            
           </div>
 
           {/* Month Navigator */}
@@ -218,7 +210,7 @@ export default function DiaryPage() {
           {grouped.map(({ date, entries }) => {
             const { day, date: dayNum } = formatDay(date);
             return (
-              <div key={date} className="flex gap-4">
+              <div key={date} className="flex gap-3 sm:gap-4 min-w-0 w-full">
                 {/* Day badge — sticky left column */}
                 <div className="flex flex-col items-center flex-shrink-0 w-14">
                   <div className="flex flex-col items-center px-2 py-2 rounded-2xl w-full"
@@ -235,7 +227,7 @@ export default function DiaryPage() {
                 </div>
 
                 {/* Movie cards */}
-                <div className="flex-1 space-y-2 pb-2">
+                <div className="flex-1 min-w-0 space-y-2 pb-2">
                   {entries.map(entry => (
                     <MovieCard key={entry.id} entry={entry} onRemove={removeDiaryEntry} />
                   ))}
