@@ -1,16 +1,19 @@
 import { useState, useMemo } from 'react';
 import { useWatchlist } from './Watchlistcontext.jsx';
-import { Star, X, MonitorCheck, Search, Trash2, Share2  } from 'lucide-react';
+import { Star, X, MonitorCheck, Search, Trash2, Share2, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import imagenotfound from './assets/imagenotfound.png';
 import ShareModal from './ShareModal.jsx';
+import DiarySearchModal from './Diary/DiarySearchModal.jsx';
 
 const Watchlist = () => {
-  const { watchlist, removeFromWatchlist, addToWatched, isWatched, clearWatchlist, updatePriority,achievement } = useWatchlist();
+  const { watchlist, removeFromWatchlist, addToWatched, isWatched, clearWatchlist, updatePriority, achievement } = useWatchlist();
   const img_300 = "https://image.tmdb.org/t/p/w300";
 
-   const [showShareModal, setShowShareModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortOption, setSortOption] = useState('dateAdded'); 
+  const [sortOption, setSortOption] = useState('dateAdded');
+  // { movie, onLogged } or null
+  const [logModal, setLogModal] = useState(null);
 
   
   const filteredWatchlist = useMemo(() => {
@@ -200,25 +203,58 @@ const Watchlist = () => {
                     Priority: {movie.priority ? movie.priority.charAt(0).toUpperCase() + movie.priority.slice(1) : "Medium"}
                   </p>
                 </div>
-                <div className="flex ">
-  <button
-    onClick={() => addToWatched(movie.id)}
-    className={`rounded text-white w-full py-2 text-sm font-medium transition-colors ${
-      isWatched(movie.id)
-        ? 'bg-gray-600 hover:bg-gray-700'
-        : 'bg-green-600 hover:bg-green-700'
-    }`}
-  >
-    {isWatched(movie.id) ? 'Mark as Unwatched' : 'Mark Watched'}
-  </button>
-
- 
-</div>
+                {/* Action buttons */}
+                {isWatched(movie.id) ? (
+                  <div className="flex gap-0">
+                    {/* Rewatched — log again without removing */}
+                    <button
+                      onClick={() => setLogModal({ movie, onLogged: null })}
+                      className="flex items-center justify-center gap-1.5 flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-medium transition-colors"
+                      aria-label="Log rewatch"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Rewatched
+                    </button>
+                    {/* Unwatch toggle */}
+                    <button
+                      onClick={() => addToWatched(movie.id)}
+                      className="flex items-center justify-center gap-1 px-3 py-2.5 bg-gray-700 hover:bg-gray-600 active:bg-gray-500 text-gray-300 hover:text-white text-xs font-medium transition-colors border-l border-gray-600"
+                      aria-label="Mark as unwatched"
+                    >
+                      <EyeOff className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  /* Mark as Watched — log film then remove from watchlist + mark watched */
+                  <button
+                    onClick={() => setLogModal({
+                      movie,
+                      onLogged: () => {
+                        addToWatched(movie.id);
+                        removeFromWatchlist(movie.id);
+                      }
+                    })}
+                    className="flex items-center justify-center gap-2 w-full py-2.5 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-sm font-medium transition-colors"
+                    aria-label="Mark as watched"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Mark as Watched
+                  </button>
+                )}
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Diary log modal — opened from watchlist cards */}
+      {logModal && (
+        <DiarySearchModal
+          initialMovie={logModal.movie}
+          onLogged={logModal.onLogged}
+          onClose={() => setLogModal(null)}
+        />
+      )}
     </div>
   );
 };

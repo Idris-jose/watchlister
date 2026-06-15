@@ -31,14 +31,14 @@ function StarRating({ value, onChange }) {
   );
 }
 
-export default function DiarySearchModal({ onClose }) {
+export default function DiarySearchModal({ onClose, initialMovie = null, onLogged = null }) {
   const { addDiaryEntry } = useDiary();
   const { API_KEY } = useWatchlist();
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState(initialMovie);
   const [watchedDate, setWatchedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [rating, setRating] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -47,8 +47,11 @@ export default function DiarySearchModal({ onClose }) {
   const debounceRef = useRef(null);
 
   useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 100);
-  }, []);
+    // Only focus search input when there's no pre-selected film
+    if (!initialMovie) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [initialMovie]);
 
   const doSearch = useCallback(async (q) => {
     if (!q.trim()) { setResults([]); return; }
@@ -81,6 +84,7 @@ export default function DiarySearchModal({ onClose }) {
     setSaving(true);
     await addDiaryEntry(selected, watchedDate, rating);
     setSaving(false);
+    onLogged?.();
     onClose();
   };
 
