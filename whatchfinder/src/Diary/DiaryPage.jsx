@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useDiary } from './DiaryContext';
 import DiarySearchModal from './DiarySearchModal';
-import { ChevronLeft, ChevronRight, Plus, Film, Star, Tv, Trash2, BookOpen, RefreshCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Film, Star, Tv, Trash2, BookOpen, RefreshCw, Flame } from 'lucide-react';
 
 const IMG_BASE = 'https://image.tmdb.org/t/p/w200';
 
@@ -89,7 +89,7 @@ function MovieCard({ entry, onRemove }) {
 }
 
 export default function DiaryPage() {
-  const { diary, diaryLoading, removeDiaryEntry } = useDiary();
+  const { diary, diaryLoading, removeDiaryEntry, streakData } = useDiary();
   const [showModal, setShowModal] = useState(false);
 
   const now = new Date();
@@ -142,16 +142,31 @@ export default function DiaryPage() {
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ background: 'linear-gradient(135deg, #3b82f6, #06b6d4)' }}
               >
                 <BookOpen className="w-4 h-4 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white tracking-tight">Diary</h1>
-                {totalThisMonth > 0 && (
-                  <p className="text-xs text-gray-500">{totalThisMonth} film{totalThisMonth !== 1 ? 's' : ''} this month</p>
-                )}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-xl font-bold text-white tracking-tight">Diary</h1>
+                  {streakData?.currentStreak > 0 && (
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-bold">
+                      <Flame className="w-3 h-3 fill-orange-500 text-orange-500 animate-pulse" />
+                      <span>{streakData.currentStreak} day streak</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                  {totalThisMonth > 0 && (
+                    <p className="text-xs text-gray-500">{totalThisMonth} film{totalThisMonth !== 1 ? 's' : ''} this month</p>
+                  )}
+                  {streakData?.currentStreak > 0 && streakData?.hoursRemaining > 0 && (
+                    <p className="text-xs text-orange-500/90 font-medium">
+                      ⏱️ {Math.floor(streakData.hoursRemaining)}h {Math.round((streakData.hoursRemaining % 1) * 60)}m left
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
             

@@ -10,13 +10,16 @@ import {
   LogOut,
   X,
   Plus,
-  BookOpen
+  BookOpen,
+  Flame
 } from 'lucide-react';
+import { useDiary } from '../Diary/DiaryContext.jsx';
 
 export default function MobileBottomNav() {
   const [showUserModal, setShowUserModal] = useState(false);
   const [showDiaryModal, setShowDiaryModal] = useState(false);
   const { user, logout } = useAuth();
+  const { streakData } = useDiary();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -148,8 +151,14 @@ export default function MobileBottomNav() {
                 <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
                   <User className="w-6 h-6 text-white" />
                 </div>
-                <div>
+                 <div>
                   <p className="text-white font-medium">{user?.email || 'User'}</p>
+                  {streakData?.currentStreak > 0 && (
+                    <div className="flex items-center gap-1 mt-1 text-orange-400 text-sm font-semibold">
+                      <Flame className="w-4 h-4 fill-orange-500 text-orange-500" />
+                      <span>{streakData.currentStreak} day streak</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
