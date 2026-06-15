@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useDiary } from './DiaryContext';
 import { useWatchlist } from '../Watchlistcontext';
-import { Search, X, Star, Calendar, Film, Tv, Check, ChevronLeft } from 'lucide-react';
+import { Search, X, Star, Calendar, Film, Tv, Check, ChevronLeft, RefreshCw } from 'lucide-react';
 
 const IMG_BASE = 'https://image.tmdb.org/t/p/w200';
 
@@ -32,7 +32,7 @@ function StarRating({ value, onChange }) {
 }
 
 export default function DiarySearchModal({ onClose, initialMovie = null, onLogged = null }) {
-  const { addDiaryEntry } = useDiary();
+  const { diary, addDiaryEntry } = useDiary();
   const { API_KEY } = useWatchlist();
 
   const [query, setQuery] = useState('');
@@ -41,6 +41,7 @@ export default function DiarySearchModal({ onClose, initialMovie = null, onLogge
   const [selected, setSelected] = useState(initialMovie);
   const [watchedDate, setWatchedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [rating, setRating] = useState(null);
+  const [rewatch, setRewatch] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const inputRef = useRef(null);
@@ -52,6 +53,16 @@ export default function DiarySearchModal({ onClose, initialMovie = null, onLogge
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [initialMovie]);
+
+  // Set initial rewatch state based on whether movie was watched before
+  useEffect(() => {
+    if (selected) {
+      const hasWatched = diary.some(d => d.movieId === selected.id);
+      setRewatch(hasWatched);
+    } else {
+      setRewatch(false);
+    }
+  }, [selected, diary]);
 
   const doSearch = useCallback(async (q) => {
     if (!q.trim()) { setResults([]); return; }
@@ -82,7 +93,7 @@ export default function DiarySearchModal({ onClose, initialMovie = null, onLogge
   const handleLog = async () => {
     if (!selected || !watchedDate) return;
     setSaving(true);
-    await addDiaryEntry(selected, watchedDate, rating);
+    await addDiaryEntry(selected, watchedDate, rating, rewatch);
     setSaving(false);
     onLogged?.();
     onClose();
@@ -221,16 +232,23 @@ export default function DiarySearchModal({ onClose, initialMovie = null, onLogge
                   </div>
                 )}
               </div>
-              <div>
-                <p className="text-white font-semibold">{selected.title || selected.name}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-semibold truncate">{selected.title || selected.name}</p>
                 <p className="text-gray-400 text-sm">{getYear(selected)}</p>
-                <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${
-                  selected.media_type === 'tv'
-                    ? 'bg-purple-900/50 text-purple-300'
-                    : 'bg-blue-900/50 text-blue-300'
-                }`}>
-                  {selected.media_type === 'tv' ? 'TV Show' : 'Film'}
-                </span>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${
+                    selected.media_type === 'tv'
+                      ? 'bg-purple-900/50 text-purple-300'
+                      : 'bg-blue-900/50 text-blue-300'
+                  }`}>
+                    {selected.media_type === 'tv' ? 'TV Show' : 'Film'}
+                  </span>
+                  {diary.some(d => d.movieId === selected.id) && (
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-green-900/50 text-green-300">
+                      Watched Before
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -260,6 +278,30 @@ export default function DiarySearchModal({ onClose, initialMovie = null, onLogge
               {rating && (
                 <p className="text-xs text-gray-500 mt-2">{rating} / 5 — tap again to clear</p>
               )}
+            </div>
+
+            {/* Rewatch Toggle */}
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-white flex items-center gap-1.5">
+                  <RefreshCw className="w-4 h-4 text-blue-400" />
+                  Rewatch
+                </span>
+                <span className="text-xs text-gray-500 mt-0.5">Toggle if you've seen this before</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRewatch(!rewatch)}
+                className={`relative inline-flex h-6.5 w-12 items-center rounded-full transition-colors focus:outline-none ${
+                  rewatch ? 'bg-blue-600' : 'bg-gray-700'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4.5 w-4.5 transform rounded-full bg-white transition-transform ${
+                    rewatch ? 'translate-x-6' : 'translate-x-1.5'
+                  }`}
+                />
+              </button>
             </div>
 
             {/* Log button */}

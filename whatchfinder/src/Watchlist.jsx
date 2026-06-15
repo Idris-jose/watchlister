@@ -205,25 +205,14 @@ const Watchlist = () => {
                 </div>
                 {/* Action buttons */}
                 {isWatched(movie.id) ? (
-                  <div className="flex gap-0">
-                    {/* Rewatched — log again without removing */}
-                    <button
-                      onClick={() => setLogModal({ movie, onLogged: null })}
-                      className="flex items-center justify-center gap-1.5 flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-medium transition-colors"
-                      aria-label="Log rewatch"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      Rewatched
-                    </button>
-                    {/* Unwatch toggle */}
-                    <button
-                      onClick={() => addToWatched(movie.id)}
-                      className="flex items-center justify-center gap-1 px-3 py-2.5 bg-gray-700 hover:bg-gray-600 active:bg-gray-500 text-gray-300 hover:text-white text-xs font-medium transition-colors border-l border-gray-600"
-                      aria-label="Mark as unwatched"
-                    >
-                      <EyeOff className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => addToWatched(movie.id)}
+                    className="flex items-center justify-center gap-2 w-full py-2.5 bg-gray-750 hover:bg-gray-700 active:bg-gray-650 text-gray-300 hover:text-white text-sm font-medium transition-colors"
+                    aria-label="Mark as unwatched"
+                  >
+                    <EyeOff className="w-4 h-4" />
+                    Mark as Unwatched
+                  </button>
                 ) : (
                   /* Mark as Watched — log film then remove from watchlist + mark watched */
                   <button

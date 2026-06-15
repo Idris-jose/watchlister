@@ -34,7 +34,7 @@ export const DiaryProvider = ({ children }) => {
     };
   }, [user]);
 
-  const addDiaryEntry = async (movie, watchedDate, rating = null) => {
+  const addDiaryEntry = async (movie, watchedDate, rating = null, rewatch = false) => {
     if (!user) {
       toast.error('Please sign in to log films');
       return;
@@ -49,6 +49,7 @@ export const DiaryProvider = ({ children }) => {
       release_date: movie.release_date || movie.first_air_date || '',
       watchedDate: watchedDate, // ISO date string: "2026-06-15"
       rating: rating,
+      rewatch: rewatch,
       loggedAt: new Date().toISOString(),
     };
 

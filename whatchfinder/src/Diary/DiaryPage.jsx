@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useDiary } from './DiaryContext';
 import DiarySearchModal from './DiarySearchModal';
-import { ChevronLeft, ChevronRight, Plus, Film, Star, Tv, Trash2, BookOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Film, Star, Tv, Trash2, BookOpen, RefreshCw } from 'lucide-react';
 
 const IMG_BASE = 'https://image.tmdb.org/t/p/w200';
 
@@ -66,6 +66,12 @@ function MovieCard({ entry, onRemove }) {
           }`}>
             {isTV ? 'TV' : 'Film'}
           </span>
+          {entry.rewatch && (
+            <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-medium bg-blue-900/40 text-blue-300" title="Rewatched">
+              <RefreshCw className="w-2.5 h-2.5" />
+              Rewatch
+            </span>
+          )}
           <StarDisplay rating={entry.rating} />
         </div>
       </div>
