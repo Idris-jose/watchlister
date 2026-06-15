@@ -197,14 +197,9 @@ function AppLayout({ children }) {
   const location = useLocation();
   const { isCollapsed } = useSidebar();
   
-  // Check if current path starts with any auth/landing pages
-  const showNavigation = !['/login', '/signup', '/forgot-password', '/'].some(page => 
-    location.pathname.startsWith(page) && (
-      location.pathname === page || 
-      location.pathname === page + '/' ||
-      (page === '/' && location.pathname === '/')
-    )
-  );
+  // Hide navigation on auth and landing pages
+  const AUTH_PATHS = ['/login', '/signup', '/forgot-password', '/'];
+  const showNavigation = !AUTH_PATHS.includes(location.pathname);
 
   const meta = getRouteMeta(location.pathname);
 
