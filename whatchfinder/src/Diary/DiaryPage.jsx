@@ -58,7 +58,7 @@ function MovieCard({ entry, onRemove }) {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-white font-medium text-sm truncate">{title}</p>
+        <p className="text-white font-medium text-sm line-clamp-2">{title}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           {year && <span className="text-gray-500 text-xs">{year}</span>}
           <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
