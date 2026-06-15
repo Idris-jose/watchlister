@@ -69,7 +69,7 @@ function MovieCard({ entry, onRemove }) {
           {entry.rewatch && (
             <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-medium bg-blue-900/40 text-blue-300" title="Rewatched">
               <RefreshCw className="w-2.5 h-2.5" />
-              Rewatch
+
             </span>
           )}
           <StarDisplay rating={entry.rating} />
