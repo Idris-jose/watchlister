@@ -52,7 +52,10 @@ export const DiaryProvider = ({ children }) => {
 
       const getLocalDateString = (isoString) => {
         const d = new Date(isoString);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0")
+        const date = String(d.getDate()).padStart(2, '0')
+        return `${year}-${month}-${date}`;
       };
 
       let streak = 0;

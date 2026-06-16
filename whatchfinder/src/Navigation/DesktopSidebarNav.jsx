@@ -69,14 +69,10 @@ export default function DesktopSidebarNav() {
           <button
             onClick={() => setShowDiaryModal(true)}
             title={isCollapsed ? 'Log a Film' : ''}
-            className={`flex items-center justify-center gap-2 w-full rounded-xl text-white text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-95 ${
+            className={`flex items-center justify-center gap-2 w-full rounded-xl text-white text-sm font-semibold transition-all duration-200 hover:scale-[1.02] hover:bg-gray-800 active:scale-95 ${
               isCollapsed ? 'p-3' : 'px-4 py-3'
             }`}
-            style={{
-              background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
-              boxShadow: '0 0 18px rgba(59,130,246,0.35)',
-            }}
-          >
+            >
             <Plus className="w-4 h-4 flex-shrink-0 stroke-[2.5]" />
             {!isCollapsed && <span>Log Film</span>}
           </button>

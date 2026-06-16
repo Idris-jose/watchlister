@@ -1,35 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useDiary } from './DiaryContext';
+import StarRating from '../components/Diary/StarRating';
 import { useWatchlist } from '../Watchlistcontext';
-import { Search, X, Star, Calendar, Film, Tv, Check, ChevronLeft, RefreshCw } from 'lucide-react';
+import { Search, X, Film, Calendar, Star, Check, ChevronLeft, RefreshCw } from 'lucide-react';
 
 const IMG_BASE = 'https://image.tmdb.org/t/p/w200';
 
-function StarRating({ value, onChange }) {
-  const [hovered, setHovered] = useState(0);
-  return (
-    <div className="flex items-center gap-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          onMouseEnter={() => setHovered(star)}
-          onMouseLeave={() => setHovered(0)}
-          onClick={() => onChange(value === star ? null : star)}
-          className="transition-transform hover:scale-110"
-        >
-          <Star
-            className={`w-6 h-6 transition-colors ${
-              star <= (hovered || value)
-                ? 'text-yellow-400 fill-yellow-400'
-                : 'text-gray-600'
-            }`}
-          />
-        </button>
-      ))}
-    </div>
-  );
-}
+
 
 export default function DiarySearchModal({ onClose, initialMovie = null, onLogged = null }) {
   const { diary, addDiaryEntry } = useDiary();
@@ -268,26 +245,14 @@ export default function DiarySearchModal({ onClose, initialMovie = null, onLogge
               />
             </div>
 
-            {/* Star rating */}
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-400 mb-3">
-                <Star className="w-4 h-4" />
-                Rating (optional)
-              </label>
-              <StarRating value={rating} onChange={setRating} />
-              {rating && (
-                <p className="text-xs text-gray-500 mt-2">{rating} / 5 — tap again to clear</p>
-              )}
-            </div>
-
             {/* Rewatch Toggle */}
             <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-white flex items-center gap-1.5">
                   <RefreshCw className="w-4 h-4 text-blue-400" />
-                  Rewatch
+                  Rewatch ? 
                 </span>
-                <span className="text-xs text-gray-500 mt-0.5">Toggle if you've seen this before</span>
+                
               </div>
               <button
                 type="button"
@@ -302,6 +267,19 @@ export default function DiarySearchModal({ onClose, initialMovie = null, onLogge
                   }`}
                 />
               </button>
+            </div>
+
+            
+            {/* Star rating */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-400 mb-3">
+                <Star className="w-4 h-4" />
+                Rating (optional)
+              </label>
+              <StarRating value={rating} onChange={setRating} />
+              {rating && (
+                <p className="text-xs text-gray-500 mt-2">{rating} / 5 — tap again to clear</p>
+              )}
             </div>
 
             {/* Log button */}

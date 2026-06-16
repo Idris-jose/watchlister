@@ -80,11 +80,7 @@ export default function MobileBottomNav() {
           <div className="relative flex flex-col items-center justify-center px-1">
             <button
               onClick={() => setShowDiaryModal(true)}
-              className="flex items-center justify-center w-14 h-14 rounded-2xl text-white transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/30"
-              style={{
-                background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
-                boxShadow: '0 0 20px rgba(59,130,246,0.4)',
-              }}
+              className="flex items-center justify-center w-14 h-14 rounded-2xl text-white transition-all duration-200 hover:scale-105 active:scale-95"
               aria-label="Log a film"
             >
               <Plus className="w-6 h-6 stroke-[2.5]" />
