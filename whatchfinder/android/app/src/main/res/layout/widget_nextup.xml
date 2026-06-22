@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_background"
+    android:padding="16dp"
+    android:gravity="center_vertical">
+
+    <!-- Header -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="&#x1F3AC;  NEXT UP"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:textColor="#FFA78BFA"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- Movie title -->
+    <TextView
+        android:id="@+id/nextup_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Nothing queued"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFFFF"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:layout_marginBottom="4dp"/>
+
+    <!-- Meta: year · type -->
+    <TextView
+        android:id="@+id/nextup_meta"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Add films to your watchlist!"
+        android:textSize="12sp"
+        android:textColor="#88FFFFFF"
+        android:layout_marginBottom="10dp"/>
+
+    <!-- Priority badge (text only — no background drawable) -->
+    <TextView
+        android:id="@+id/nextup_priority_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="12sp"
+        android:textColor="#FFFBBF24"/>
+
+</LinearLayout>

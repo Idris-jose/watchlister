@@ -4,4 +4,7 @@
     <string name="title_activity_main">watchlister</string>
     <string name="package_name">com.joseidris.watchlister</string>
     <string name="custom_url_scheme">com.joseidris.watchlister</string>
+    <string name="streak_widget_description">Shows your film-watching streak</string>
+    <string name="stats_widget_description">Shows your watchlist stats at a glance</string>
+    <string name="nextup_widget_description">Shows the next film to watch from your list</string>
 </resources>

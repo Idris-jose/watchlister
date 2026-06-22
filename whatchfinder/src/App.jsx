@@ -7,6 +7,7 @@ import { WatchlistProvider } from './Watchlistcontext.jsx';
 import { AuthProvider } from './Auth/AuthContext.jsx';
 import { SidebarProvider, useSidebar } from './SidebarContext.jsx';
 import { DiaryProvider } from './Diary/DiaryContext.jsx';
+import WidgetSync from './components/WidgetSync.jsx';
 
 // Lazy load components for code splitting
 const LandingPage = lazy(() => import('./Landingpage/landingpage.jsx'));
@@ -241,6 +242,7 @@ export default function App() {
         <SidebarProvider>
           <WatchlistProvider>
             <DiaryProvider>
+              <WidgetSync />
               <AppLayout>
                 <Routes>
                   <Route path="/" element={<LandingPage />} />
